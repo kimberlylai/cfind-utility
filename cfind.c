@@ -1,11 +1,20 @@
+/*
+ CITS2002 Project 2 2016
+ Names:			    Kimberly Lai Siru, Braden Ryan
+ Student numbers:	21818156, 20930745
+ Date:			    04-11-2016
+ 
+ */
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
-#include <dirent.h>
 #include <getopt.h>
-#include <statexpr.h> 
+#include <errno.h>
+
+#define	OPTLIST		"acd:lrstu"
 
 static void searchforfilename(char argv) {
   for (int i = 0; i < ?; i++) {
@@ -51,18 +60,19 @@ void count(char *dirname)
 }
 closedir(dirp);
 
-#define	OPTLIST		"acd:lrstu"
 int read_args(int argc, char *argv[]){
     int  opt;
-    bool aflag   = false;
-    bool cflag   = false;
-    bool lflag   = false;
-    bool rflag   = false;
-    bool sflag   = false;
-    bool tflag   = false;
-    bool uflag   = false;
+    bool aflag   = false; //all entries be considered, including file-entries beginning with the '.' character
+    bool cflag   = false; //Print only the count of the number of matching file-entries, then exit
+    bool lflag   = false; //print long listing (permissions, inode, number of links, owner's name, group-owner's name, size, modificate-date, and name)
+    bool rflag   = false; //Reverse the order of any sorting options.
+    bool sflag   = false; //Print matching file-entries, sorted by size. If both -s and -t are provided, -t takes precedence.
+    bool tflag   = false; //Print matching file-entries, sorted by modification time. If both -s and -t are provided, -t takes precedence.
+    bool uflag   = false; //Attempt to unlink (remove) as many matching file-entries as possible. The cfind utility should exit with failure if any attempt to unlink a file-entry was unsuccessful.
     char *filenm = NULL;
-    int  depth   = DEFAULT_VALUE;
+    int  depth   = DEFAULT_VALUE; //Limit the search to the indicated depth, descending at most depth levels
+
+  
     while((opt = getopt(argc, argv, OPTLIST)) != -1) {
         //  ACCEPT A BOOLEAN ARGUMENT
         if(opt == 'a')
@@ -73,7 +83,6 @@ int read_args(int argc, char *argv[]){
         else if(opt == 'c')
         {
             cflag  =  !cflag;
-            count(char *argv)
         }
         else if(opt == 'r')
         {
@@ -103,7 +112,8 @@ int read_args(int argc, char *argv[]){
         //  OOPS - AN UNKNOWN ARGUMENT
         else 
         {
-            printf("error? no such argument exists.")
+            fprintf(stderr,"Error: %s \nusage: ./cfind [options]  pathname  [stat-expression]\n", strerror(errnum));
+
         }
     }
     
@@ -149,19 +159,38 @@ int check_type(char *pathname){
     //use dirent DTYPE
     //if file return 1
     //if dir return 2
+    struct stat statbuf;
+    if(stat(pathname, &s)==0){
+        if (statbuf.st_mode & S_IFDIR) //if it is a dir
+        {
+            return 2;
+        }
+        else if (statbuf.st_mode & S_IFREG) //if it's a file
+        {
+            return 1;
+        }
+        else 
+        {
+            printf("Error: \"%s\" is neither a file nor a directory. Try again. \n", pathname);
+            exit(EXIT_FAILURE); //it's neither
+        }
+    }
+    printf("Error: \"%s\" is neither a file nor a directory. Try again. \n", pathname);
+    exit(EXIT_FAILURE); 
     
 }
 int main (int argc, char *argv[])
 {
     
     if (argc==1){
-        printf("error! did not specify filename \nusage: ./cfind [file system pathname] [conditional expressions]\n");
+        fprintf(stderr,"Error: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", strerror(errnum));
         exit(EXIT_FAILURE); 		//exit indicating failure	
     }
     if (argc==2){
         //check if file or directory
         //if yes, print the names of all files and directories at or below the provided pathname
         //if not, exit failure
+        check_type(argv[1]);
         read(argv[1]);
     }
     if (argc > 2){
