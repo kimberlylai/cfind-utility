@@ -11,8 +11,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <getopt.h>
 #include <errno.h>
+#include <string.h>
 
 #define	OPTLIST		"acd:lrstu"
 
@@ -112,7 +114,7 @@ int read_args(int argc, char *argv[]){
         //  OOPS - AN UNKNOWN ARGUMENT
         else 
         {
-            fprintf(stderr,"Error: %s \nusage: ./cfind [options]  pathname  [stat-expression]\n", strerror(errnum));
+            fprintf(stderr,"Error: %s \nusage: ./cfind [options]  pathname  [stat-expression]\n", strerror(errno));
 
         }
     }
@@ -183,7 +185,7 @@ int main (int argc, char *argv[])
 {
     
     if (argc==1){
-        fprintf(stderr,"Error: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", strerror(errnum));
+        fprintf(stderr,"Error: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", strerror(errno));
         exit(EXIT_FAILURE); 		//exit indicating failure	
     }
     if (argc==2){
