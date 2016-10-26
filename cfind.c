@@ -71,8 +71,8 @@ int read_args(int argc, char *argv[]){
     bool sflag   = false; //Print matching file-entries, sorted by size. If both -s and -t are provided, -t takes precedence.
     bool tflag   = false; //Print matching file-entries, sorted by modification time. If both -s and -t are provided, -t takes precedence.
     bool uflag   = false; //Attempt to unlink (remove) as many matching file-entries as possible. The cfind utility should exit with failure if any attempt to unlink a file-entry was unsuccessful.
-    char *filenm = NULL;
-    int  depth   = DEFAULT_VALUE; //Limit the search to the indicated depth, descending at most depth levels
+    //char *filenm = NULL;
+    int  depth   = 0; //Limit the search to the indicated depth, descending at most depth levels
 
   
     while((opt = getopt(argc, argv, OPTLIST)) != -1) {
@@ -80,7 +80,7 @@ int read_args(int argc, char *argv[]){
         if(opt == 'a')
         {
             aflag  =  !aflag;
-            read_all(argv[1]);
+            //read_all(argv[1]);
         }
         else if(opt == 'c')
         {
@@ -121,12 +121,12 @@ int read_args(int argc, char *argv[]){
     
     
     if(argc <= 0) {    //  display program's usage/help
-        usage(1);
+        fprintf(stderr,"Error: %s \nusage: ./cfind [options]  pathname  [stat-expression]\n", strerror(errno));
     }
 
     return 0;
 }
-int read(char *pathname){
+int read_file(char *pathname){
     //do something;
     
     return 0;
@@ -153,7 +153,7 @@ int size_sort(char *pathname){
 int time_sort(char *pathname){
     return 0;
 }
-int unlink(char *pathname){
+int unlink_file(char *pathname){
     return 0;
 }
 int check_type(char *pathname){
@@ -162,7 +162,7 @@ int check_type(char *pathname){
     //if file return 1
     //if dir return 2
     struct stat statbuf;
-    if(stat(pathname, &s)==0){
+    if(stat(pathname, &statbuf)==0){
         if (statbuf.st_mode & S_IFDIR) //if it is a dir
         {
             return 2;
@@ -193,10 +193,11 @@ int main (int argc, char *argv[])
         //if yes, print the names of all files and directories at or below the provided pathname
         //if not, exit failure
         check_type(argv[1]);
-        read(argv[1]);
+        //read(argv[1]);
     }
     if (argc > 2){
-        read_args(int argc, char *argv[]);
+        //read_args(int argc, char *argv[]);
+        check_type(argv[1]);
     }
     	
 }
