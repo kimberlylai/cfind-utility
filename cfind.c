@@ -15,15 +15,16 @@
 #include <getopt.h>
 #include <errno.h>
 #include <string.h>
+#include <dirent.h>
 
 #define	OPTLIST		"acd:lrstu"
 
-static void searchforfilename(char argv) {
+/**static void searchforfilename(char argv) {
   for (int i = 0; i < ?; i++) {
     if (strcmp(argv, dirp[i].name) == 0) {
       printf
     }
-  }
+  }**/
 
 void list_directory(char *dirname)
 {
