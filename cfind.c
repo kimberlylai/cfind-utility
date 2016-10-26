@@ -51,8 +51,7 @@ void count(char *dirname)
     dirp = opendir(dirname);
     if(dirp == NULL)
     {
-    perror( progname );
-    exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
     while ((entry = readdir(dirp)) != NULL) {
     if (entry->d_type == DT_REG || entry->d_type == DT_DIR) { /* If the entry is a regular file */
