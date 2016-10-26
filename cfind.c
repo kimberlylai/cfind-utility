@@ -53,7 +53,7 @@ void count(char *dirname)
     exit(EXIT_FAILURE);
     }
     while ((entry = readdir(dirp)) != NULL) {
-    if (entry->d_type == DT_REG) { /* If the entry is a regular file */
+    if (entry->d_type == DT_REG || entry->d_type == DT_DIR) { /* If the entry is a regular file */
          filecount++;  
     }
     printf("%d", filecount);
