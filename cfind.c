@@ -33,7 +33,6 @@ void list_directory(char *dirname)
     dirp = opendir(dirname);
     if(dirp == NULL)
     {
-    perror( progname );
     exit(EXIT_FAILURE);
     }
     while((dp = readdir(dirp)) != NULL)
