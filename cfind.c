@@ -30,6 +30,8 @@ void list_directory(char *dirname)
 {
     DIR *dirp;
     struct dirent *dp;
+    char* path = dirname;
+    size_t pathlen = strlen(dirname);
     dirp = opendir(dirname);
     if(dirp == NULL)
     {
@@ -37,7 +39,19 @@ void list_directory(char *dirname)
     }
     while((dp = readdir(dirp)) != NULL)
     {
-        printf( "%s\n", dp->d_name );
+        char *fullpath = malloc(pathlen + strlen(dp->d_name) + 2);
+        if (fullpath == NULL) { 
+        /* deal with error and exit */ 
+        printf("Error");
+        }
+        //printf("%s/%s\n",path, ep->d_name);
+        if ((strcmp(dp->d_name, ".") && strcmp(dp->d_name, ".."))==0){
+            printf("%s\n",dp->d_name);
+        }else{
+        sprintf(fullpath, "%s/%s", path, dp->d_name);
+        puts(fullpath);
+        free(fullpath);}
+                    
     }
     closedir(dirp);
 }
