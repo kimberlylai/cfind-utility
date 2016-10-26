@@ -7,6 +7,13 @@
 #include <getopt.h>
 #include <statexpr.h> 
 
+static void searchforfilename(char argv) {
+  for (int i = 0; i < ?; i++) {
+    if (strcmp(argv, dirp[i].name) == 0) {
+      printf
+    }
+  }
+
 void list_directory(char *dirname)
 {
     DIR *dirp;
