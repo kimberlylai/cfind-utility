@@ -3,8 +3,46 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
-
+#include <dirent.h>
 #include <getopt.h>
+#include <statexpr.h> 
+
+void list_directory(char *dirname)
+{
+    DIR *dirp;
+    struct dirent *dp;
+    dirp = opendir(dirname);
+    if(dirp == NULL)
+    {
+    perror( progname );
+    exit(EXIT_FAILURE);
+    }
+    while((dp = readdir(dirp)) != NULL)
+    {
+    printf( "%s\n", dp->d_name );
+    }
+    closedir(dirp);
+}
+
+void count(char *dirname)
+{
+    int filecount = 0;
+    DIR *dirp;
+    struct dirent *entry;
+    
+    dirp = opendir(dirname);
+    if(dirp == NULL)
+    {
+    perror( progname );
+    exit(EXIT_FAILURE);
+    }
+    while ((entry = readdir(dirp)) != NULL) {
+    if (entry->d_type == DT_REG) { /* If the entry is a regular file */
+         filecount++;  
+    }
+    printf("%d", filecount);
+}
+closedir(dirp);
 
 #define	OPTLIST		"acd:lrstu"
 int read_args(int argc, char *argv[]){
@@ -28,6 +66,7 @@ int read_args(int argc, char *argv[]){
         else if(opt == 'c')
         {
             cflag  =  !cflag;
+            count(char *argv)
         }
         else if(opt == 'r')
         {
