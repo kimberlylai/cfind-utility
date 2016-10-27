@@ -77,7 +77,8 @@ void list_directory(char *dirname)
         if ((check_type(fullpath))==2){
             list_directory(fullpath);
         }
-        free(fullpath);}
+        free(fullpath);
+        }
                     
     }
     closedir(dirp);
@@ -98,7 +99,7 @@ void countfiles(char *pathname)
     {
         if (entry->d_type == DT_REG | entry->d_type == DT_DIR)
         {
-            printf("%d\n", filecount);
+            //printf("%d\n", filecount);
             filecount++;
         }
     }
