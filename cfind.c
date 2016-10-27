@@ -25,7 +25,31 @@
  printf
  }
  }**/
-
+int check_type(char *pathname){
+        //checks if pathname specified is a file or a directories
+        //use dirent DTYPE
+        //if file return 1
+        //if dir return 2
+        struct stat statbuf;
+        if(stat(pathname, &statbuf)==0){
+            if (statbuf.st_mode & S_IFDIR) //if it is a dir
+            {
+                return 2;
+            }
+            else if (statbuf.st_mode & S_IFREG) //if it's a file
+            {
+                return 1;
+            }
+            else
+            {
+                printf("Error: \"%s\" is neither a file nor a directory. Try again. \n", pathname);
+                exit(EXIT_FAILURE); //it's neither
+            }
+        }
+        printf("Error: \"%s\" is neither a file nor a directory. Try again. \n", pathname);
+        exit(EXIT_FAILURE);
+        
+    }
 void list_directory(char *dirname)
 {
     DIR *dirp;
@@ -50,6 +74,9 @@ void list_directory(char *dirname)
         }else{
         sprintf(fullpath, "%s/%s", path, dp->d_name);
         puts(fullpath);
+        if ((check_type(fullpath))==2){
+            list_directory(fullpath);
+        }
         free(fullpath);}
                     
     }
@@ -173,31 +200,7 @@ void countfiles(char *pathname)
     int unlink_file(char *pathname){
         return 0;
     }
-    int check_type(char *pathname){
-        //checks if pathname specified is a file or a directories
-        //use dirent DTYPE
-        //if file return 1
-        //if dir return 2
-        struct stat statbuf;
-        if(stat(pathname, &statbuf)==0){
-            if (statbuf.st_mode & S_IFDIR) //if it is a dir
-            {
-                return 2;
-            }
-            else if (statbuf.st_mode & S_IFREG) //if it's a file
-            {
-                return 1;
-            }
-            else
-            {
-                printf("Error: \"%s\" is neither a file nor a directory. Try again. \n", pathname);
-                exit(EXIT_FAILURE); //it's neither
-            }
-        }
-        printf("Error: \"%s\" is neither a file nor a directory. Try again. \n", pathname);
-        exit(EXIT_FAILURE);
-        
-    }
+    
     int main (int argc, char *argv[])
     {
         
