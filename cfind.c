@@ -70,7 +70,8 @@ void list_directory(char *dirname)
         }
         //printf("%s/%s\n",path, ep->d_name);
         if ((strcmp(dp->d_name, ".") && strcmp(dp->d_name, ".."))==0){
-            printf("%s\n",dp->d_name);
+            //printf("%s\n",dp->d_name);
+            continue;
         }else{
         sprintf(fullpath, "%s/%s", path, dp->d_name);
         puts(fullpath);
@@ -83,30 +84,49 @@ void list_directory(char *dirname)
     }
     closedir(dirp);
 }
-
-void countfiles(char *pathname)
+void countfiles2(char *dirname)
 {
-    int filecount = 0;
     DIR *dirp;
-    struct dirent *entry;
-    
-    dirp = opendir(pathname);
+    struct dirent *dp;
+    char* path = dirname;
+    size_t pathlen = strlen(dirname);
+    dirp = opendir(dirname);
+    int filecount=0;
     if(dirp == NULL)
     {
         exit(EXIT_FAILURE);
     }
-    while ((entry = readdir(dirp)) != NULL)
+    while((dp = readdir(dirp)) != NULL)
     {
-        if (entry->d_type == DT_REG | entry->d_type == DT_DIR)
-        {
-            //printf("%d\n", filecount);
-            filecount++;
+        char *fullpath = malloc(pathlen + strlen(dp->d_name) + 2);
+        if (fullpath == NULL) {
+            /* deal with error and exit */
+            printf("Error");
         }
+        //printf("%s/%s\n",path, ep->d_name);
+        if ((strcmp(dp->d_name, ".") && strcmp(dp->d_name, ".."))==0){
+            //printf("%s\n",dp->d_name);
+            continue;
+        }else{
+            sprintf(fullpath, "%s/%s", path, dp->d_name);
+            //puts(fullpath);
+            
+            //filecount++;
+            if ((check_type(fullpath))==2){
+                filecount++;
+                countfiles2(fullpath);
+            }
+            else if ((check_type(fullpath))==1){
+                filecount++;
+            }
+            free(fullpath);
+        }
+        
     }
+    printf("here!!! %d\n",filecount);
     closedir(dirp);
-    printf("%d\n", filecount);
-
 }
+
     int read_args(int argc, char *argv[]){
         int  opt;
         bool aflag   = false; //all entries be considered, including file-entries beginning with the '.' character
@@ -214,8 +234,8 @@ void countfiles(char *pathname)
             //if yes, print the names of all files and directories at or below the provided pathname
             //if not, exit failure
             check_type(argv[1]);
-            countfiles(argv[1]);
-            list_directory(argv[1]);
+            countfiles2(argv[1]);
+            //list_directory(argv[1]);
             //read(argv[1]);
         }
         if (argc > 2){
