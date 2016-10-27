@@ -40,20 +40,63 @@ void list_directory(char *dirname)
     while((dp = readdir(dirp)) != NULL)
     {
         char *fullpath = malloc(pathlen + strlen(dp->d_name) + 2);
-        if (fullpath == NULL) { 
-        /* deal with error and exit */ 
+        if (fullpath == NULL)
+        {
         printf("Error");
         }
-        //printf("%s/%s\n",path, ep->d_name);
-        if ((strcmp(dp->d_name, ".") && strcmp(dp->d_name, ".."))==0){
+        if ((strcmp(dp->d_name, ".") && strcmp(dp->d_name, ".."))==0)
+        {
             printf("%s\n",dp->d_name);
-        }else{
+        }
+        else{
         sprintf(fullpath, "%s/%s", path, dp->d_name);
         puts(fullpath);
-        free(fullpath);}
-                    
+        free(fullpath);
+            }
+     /**   if(dp->d_type == DT_DIR && strcmp(dp->d_name, ".") != 0  && strcmp(dp->d_name, "..") != 0)
+        {
+          list_directory(dp->d_name);
+        }
+      **/
+        
     }
     closedir(dirp);
+}
+
+int is_directory_we_want_to_list(const char *parent, char *name)
+{
+    struct stat st_buf;
+    if (!strcmp(".", name) || !strcmp("..", name))
+        return 0;
+    
+    char *path = alloca(strlen(name) + strlen(parent) + 2);
+    sprintf(path, "%s/%s", parent, name);
+    stat(path, &st_buf);
+    return S_ISDIR(st_buf.st_mode);
+}
+
+void list(const char *name)
+{
+    DIR *dir = opendir(name);
+    struct dirent *ent;
+    
+    while ((ent = readdir(dir)))
+    {
+        char *entry_name = ent->d_name;
+        printf("%s\n", entry_name);
+        
+        if (is_directory_we_want_to_list(name, entry_name))
+        {
+            char *next = malloc(strlen(name) + strlen(entry_name) + 2);
+            strcpy (next, name);
+            strcat (next, "/");
+            strcat (next, entry_name);
+            list(next);
+            free(next);
+        }
+    }
+    
+    closedir(dir);
 }
 
 void countfiles(char *pathname)
@@ -71,7 +114,6 @@ void countfiles(char *pathname)
     {
         if (entry->d_type == DT_REG | entry->d_type == DT_DIR)
         {
-            printf("%d\n", filecount);
             filecount++;
         }
     }
@@ -153,6 +195,7 @@ void countfiles(char *pathname)
     }
     int count(char *pathname){
         return 0;
+
     }
     int depth(char *pathname, int value){
         return 0;
@@ -211,7 +254,9 @@ void countfiles(char *pathname)
             //if not, exit failure
             check_type(argv[1]);
             countfiles(argv[1]);
-            list_directory(argv[1]);
+            list(argv[1]);
+
+            
             //read(argv[1]);
         }
         if (argc > 2){
