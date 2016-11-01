@@ -101,6 +101,60 @@ void list_directory(char *dirname, bool aflag, int filecount)
 	}
 	closedir(dirp);
 }
+void list_directory_depth(char *dirname, bool aflag, int depth)
+{
+	DIR *dirp;
+	struct dirent *dp;
+	char *path = dirname;
+	size_t pathlen = strlen(dirname);
+	dirp = opendir(dirname);
+
+
+	if(dirp == NULL)
+	{
+		exit(EXIT_FAILURE);
+	}
+	if(depth==0)
+	{
+		//if((check_type(fullpath))==1){
+		//char *fullpath = malloc(pathlen + strlen(dp->d_name) + 2);
+		//sprintf(fullpath, "%s/%s", path, dp->d_name);
+		//puts(fullpath);
+		//}
+		printf("%s\n",path);
+	}
+	
+	while((dp = readdir(dirp)) != NULL && depth!=0)
+	{
+		char *fullpath = malloc(pathlen + strlen(dp->d_name) + 2);
+		if (fullpath == NULL) {
+			/* deal with error and exit */
+			printf("Error");
+		}
+		//printf("%s/%s\n",path, ep->d_name);
+		if ((strcmp(dp->d_name, ".") && strcmp(dp->d_name, ".."))==0){
+			continue;
+		}else{
+			if(dp->d_name[0]=='.') {
+				continue;
+			}
+			else{
+				sprintf(fullpath, "%s/%s", path, dp->d_name);
+				//depth--;
+				puts(fullpath);
+				}
+			
+			if ((check_type(fullpath))==2 && depth>1){
+				list_directory(fullpath,aflag,depth);
+				depth--;
+			}
+			free(fullpath);
+			
+		}
+
+	}
+	closedir(dirp);
+}
 int count_all(char *dirname, bool aflag, int filecount)
 {
 	DIR *dirp;
@@ -231,6 +285,7 @@ int read_args (int argc, char *argv[]){
 	int  opt;
 	bool aflag   = false; //all entries be considered, including file-entries beginning with the '.' character
 	bool cflag   = false; //Print only the count of the number of matching file-entries, then exit
+	bool dflag   = false;
 	bool lflag   = false; //print long listing (permissions, inode, number of links, owner's name, group-owner's name, size, modificate-date, and name)
 	bool rflag   = false; //Reverse the order of any sorting options.
 	bool sflag   = false; //Print matching file-entries, sorted by size. If both -s and -t are provided, -t takes precedence.
@@ -277,6 +332,7 @@ int read_args (int argc, char *argv[]){
 		//  ACCEPT A INTEGER ARGUMENT
 		else if(opt == 'd')
 		{
+			dflag = !dflag;
 			depth  =  atoi(optarg);
 		}
 		//  OOPS - AN UNKNOWN ARGUMENT
@@ -308,6 +364,11 @@ int read_args (int argc, char *argv[]){
 			unlink_dir(argv[optind]); 
             exit(EXIT_SUCCESS);
 		}
+	}
+	if(dflag==1){
+		list_directory_depth(argv[optind],aflag, depth);
+		printf("d d-done");
+		exit(EXIT_SUCCESS);
 	}
 	list_directory(argv[optind],aflag, filecount);
 
