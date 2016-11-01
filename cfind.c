@@ -3,7 +3,6 @@
  Names:			    Kimberly Lai Siru, Braden Ryan
  Student numbers:	21818156, 20930745
  Date:			    04-11-2016
-
  */
 
 #include <stdio.h>
@@ -53,11 +52,60 @@ int check_type(char *pathname){
 	exit(EXIT_FAILURE);
 
 }
-void list_directory(char *dirname, bool aflag)
+void list_directory(char *dirname, bool aflag, int filecount)
 {
 	DIR *dirp;
 	struct dirent *dp;
-	char* path = dirname;
+	char *path = dirname;
+	size_t pathlen = strlen(dirname);
+	dirp = opendir(dirname);
+
+
+	if(dirp == NULL)
+	{
+		exit(EXIT_FAILURE);
+	}
+	while((dp = readdir(dirp)) != NULL)
+	{
+		char *fullpath = malloc(pathlen + strlen(dp->d_name) + 2);
+		if (fullpath == NULL) {
+			/* deal with error and exit */
+			printf("Error");
+		}
+		//printf("%s/%s\n",path, ep->d_name);
+		if ((strcmp(dp->d_name, ".") && strcmp(dp->d_name, ".."))==0){
+			continue;
+		}else{
+			if (aflag == 1){
+				filecount++;
+				sprintf(fullpath, "%s/%s", path, dp->d_name);
+				puts(fullpath);
+			}
+			else{
+				if(dp->d_name[0]=='.') {
+					continue;
+				}
+				else{
+					filecount++;
+					sprintf(fullpath, "%s/%s", path, dp->d_name);
+					puts(fullpath);
+
+				}
+			}
+			if ((check_type(fullpath))==2){
+				list_directory(fullpath,aflag,filecount);
+			}
+			free(fullpath);
+		}
+
+	}
+	closedir(dirp);
+}
+int count_all(char *dirname, bool aflag, int filecount)
+{
+	DIR *dirp;
+	struct dirent *dp;
+	char *path = dirname;
 	size_t pathlen = strlen(dirname);
 	dirp = opendir(dirname);
 
@@ -68,60 +116,116 @@ void list_directory(char *dirname, bool aflag)
 	while((dp = readdir(dirp)) != NULL)
 	{
 		char *fullpath = malloc(pathlen + strlen(dp->d_name) + 2);
-		if (fullpath == NULL) { 
-			/* deal with error and exit */ 
+		if (fullpath == NULL) {
+			/* deal with error and exit */
 			printf("Error");
 		}
 		//printf("%s/%s\n",path, ep->d_name);
 		if ((strcmp(dp->d_name, ".") && strcmp(dp->d_name, ".."))==0){
 			continue;
 		}else{
-            if (aflag == 1){
-			sprintf(fullpath, "%s/%s", path, dp->d_name);
-			puts(fullpath);
-            }
-            else{
-                if(dp->d_name[0]=='.') {
-                    continue;
-                }
-                else{
-                    sprintf(fullpath, "%s/%s", path, dp->d_name);
-                    puts(fullpath);
-                    
-                }
-            }
+			if (aflag == 1){
+				filecount++;
+				sprintf(fullpath, "%s/%s", path, dp->d_name);
+
+
+			}
+			else{
+				if(dp->d_name[0]=='.') {
+					continue;
+				}
+				else{
+					filecount++;
+					sprintf(fullpath, "%s/%s", path, dp->d_name);
+
+
+				}
+			}
 			if ((check_type(fullpath))==2){
-				list_directory(fullpath,aflag);
+				filecount=count_all(fullpath,aflag,filecount);
 			}
 			free(fullpath);
 		}
 
 	}
 	closedir(dirp);
+	return filecount;
 }
-
-void countfiles(char *pathname)
+/**void countfiles(char *pathname)
 {
-	int filecount = 0;
-	DIR *dirp;
-	struct dirent *entry;
+    int filecount = 0;
+    DIR *dirp;
+    struct dirent *entry;
 
+    dirp = opendir(pathname);
+    if(dirp == NULL)
+    {
+        exit(EXIT_FAILURE);
+    }
+    while ((entry = readdir(dirp)) != NULL)
+    {
+        if (entry->d_type == DT_REG | entry->d_type == DT_DIR)
+        {
+            //printf("%d\n", filecount);
+            filecount++;
+        }
+    }
+    closedir(dirp);
+    printf("%d\n", filecount);
+
+}**/
+
+void unlink_dir(char *pathname){
+    /**  
+    unlink_dir reads the directory and deletes everything inside.
+    if there is a directory inside the directory, it will traverse 
+    the directory and remove it too
+    **/
+	//printf("%s\n", pathname);
+	/**if((check_type(pathname))==1)//its a file
+	{
+		unlink(pathname);
+		exit(EXIT_SUCCESS);
+	}
+	else if ((check_type(pathname))==2)
+    {**/
+	DIR *dirp;
+	struct dirent *dp;
+	char *path = pathname;
+	size_t pathlen = strlen(pathname);
 	dirp = opendir(pathname);
 	if(dirp == NULL)
 	{
 		exit(EXIT_FAILURE);
 	}
-	while ((entry = readdir(dirp)) != NULL)
+	while((dp = readdir(dirp)) != NULL)
 	{
-		if (entry->d_type == DT_REG | entry->d_type == DT_DIR)
-		{
-			//printf("%d\n", filecount);
-			filecount++;
+		char *fullpath = malloc(pathlen + strlen(dp->d_name) + 2);
+		if (fullpath == NULL) {
+			/* deal with error and exit */
+			printf("Error");
 		}
+		//printf("%s/%s\n",path, ep->d_name);
+		if ((strcmp(dp->d_name, ".") && strcmp(dp->d_name, ".."))==0){
+			continue;
+		}else{
+			sprintf(fullpath, "%s/%s", path, dp->d_name);
+			if ((check_type(fullpath))==1){
+				unlink(fullpath);
+			}else if ((check_type(fullpath))==2){
+                //rmdir(fullpath); //remove the (now empty) directory
+				unlink_dir(fullpath);
+                rmdir(fullpath); //remove the (now empty) directory
+			}
+			
+		}
+        free(fullpath);
 	}
-	closedir(dirp);
-	printf("%d\n", filecount);
 
+	closedir(dirp);
+    
+	//exit(EXIT_SUCCESS);
+	//}
 }
 int read_args (int argc, char *argv[]){
 	int  opt;
@@ -134,6 +238,8 @@ int read_args (int argc, char *argv[]){
 	bool uflag   = false; //Attempt to unlink (remove) as many matching file-entries as possible. The cfind utility should exit with failure if any attempt to unlink a file-entry was unsuccessful.
 	//char *filenm = NULL;
 	int  depth   = 0; //Limit the search to the indicated depth, descending at most depth levels
+	int filecount = 0;
+
 
 
 	while((opt = getopt(argc, argv, OPTLIST)) != -1) {
@@ -145,8 +251,8 @@ int read_args (int argc, char *argv[]){
 		}
 		else if(opt == 'c')
 		{
-			//cflag  =  !cflag;
-            countfiles(argv[optind]);
+			cflag  =  !cflag;
+			//countfiles(argv[optind]);
 		}
 		else if(opt == 'r')
 		{
@@ -177,24 +283,40 @@ int read_args (int argc, char *argv[]){
 		else
 		{
 			fprintf(stderr,"Error: %s \nusage: ./cfind [options]  pathname  [stat-expression]\n", strerror(errno));
-            exit(EXIT_FAILURE); 		//exit indicating failure	
+			exit(EXIT_FAILURE); 		//exit indicating failure
 
 		}
-        
+
 	}
 
 	if(argc <= 0) {    //  display program's usage/help
 		fprintf(stderr,"Error: %s \nusage: ./cfind [options]  pathname  [stat-expression]\n", strerror(errno));
 	}
 
-    list_directory(argv[optind],aflag);
+	if(cflag==1){
+		printf("%d\n",count_all(argv[optind],aflag, filecount));
+		exit(EXIT_SUCCESS);
+	}
+	if(uflag==1){
+        if((check_type(argv[optind]))==1) //if it is a file, unlink the file
+		{
+			unlink((argv[optind]));
+            exit(EXIT_SUCCESS);
+		}
+		else if((check_type(argv[optind]))==2) //else if it's a directory, run our function
+		{
+			unlink_dir(argv[optind]); 
+            exit(EXIT_SUCCESS);
+		}
+	}
+	list_directory(argv[optind],aflag, filecount);
+
 	return 0;
 }
 /*int traverse_filesystem(int argc, char *argv[]){
 	read_args(int argc, char *argv[]);
-
 	return 0;
-}*/
+ }*/
 int read_all(char *pathname){
 	return 0;
 }
@@ -217,9 +339,7 @@ int size_sort(char *pathname){
 int time_sort(char *pathname){
 	return 0;
 }
-int unlink_file(char *pathname){
-	return 0;
-}
+
 
 int main (int argc, char *argv[])
 {
@@ -236,12 +356,12 @@ int main (int argc, char *argv[])
 		//countfiles(argv[1]);
 		//list_directory(argv[1]);
 		//read(argv[1]);
-        read_args(argc, argv);
+		read_args(argc, argv);
 	}
 	if (argc > 2){
 		//read_args(int argc, char *argv[]);
 		//check_type(argv[1]);
-        read_args(argc, argv);
+		read_args(argc, argv);
 	}
 
 
