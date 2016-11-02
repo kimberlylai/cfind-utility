@@ -58,7 +58,6 @@ int check_type(char *pathname){
 	exit(EXIT_FAILURE);
 
 }
-
 void long_list_directory(char *dirname)
 {
     DIR *dirp;
@@ -67,14 +66,16 @@ void long_list_directory(char *dirname)
     dirp = opendir(dirname);
 
     
-    while ((dp=readdir(dirp)) != NULL){
+    while ((dp=readdir(dirp)) != NULL)
+	{
         if (stat(dp->d_name, &statbuf) == -1)
+		{
             continue;
+		}
         printf("%jd",(intmax_t)statbuf.st_size);
+	}
 }
-}
-
-void list_directory(char *dirname, bool aflag, bool lflag, int filecount)
+void list_directory(char *dirname, bool aflag, bool lflag)
 {
 	DIR *dirp;
 	struct dirent *dp;
@@ -104,8 +105,10 @@ void list_directory(char *dirname, bool aflag, bool lflag, int filecount)
 		}
         else{
 			if (aflag == 1){
-				filecount++;
-                if (stat(dp->d_name, &statbuf) == -1){
+				//filecount++;
+				sprintf(fullpath, "%s/%s", path, dp->d_name);
+				puts(fullpath);
+                if (stat(dp->d_name, &statbuf) != -1){
                     continue;
                 }
                 if (lflag == 1){
@@ -134,8 +137,7 @@ void list_directory(char *dirname, bool aflag, bool lflag, int filecount)
                 strftime(datestring, sizeof(datestring), nl_langinfo(D_T_FMT), tm);
                     
                     printf(" %s", datestring);}
-                sprintf(fullpath, "%s/%s", path, dp->d_name);
-				puts(fullpath);
+                
 
             }
             else{
@@ -143,8 +145,10 @@ void list_directory(char *dirname, bool aflag, bool lflag, int filecount)
                     continue;
                 }
                 else{
-                    filecount++;
-                    if (stat(dp->d_name, &statbuf) == -1){
+                    //filecount++;
+					sprintf(fullpath, "%s/%s", path, dp->d_name);
+					puts(fullpath);
+                    if (stat(dp->d_name, &statbuf) != -1){
                         continue;
                     }
                     if (lflag == 1){
@@ -177,14 +181,14 @@ void list_directory(char *dirname, bool aflag, bool lflag, int filecount)
                 }
             }
             if ((check_type(fullpath))==2){
-                list_directory(fullpath,aflag,lflag,filecount);
+                list_directory(fullpath,aflag,lflag);
             }
             free(fullpath);		}
 
 	}
 	closedir(dirp);
 }
-void list_directory_depth(char *dirname, bool aflag, bool lflag,  int depth)
+void list_directory_depth(char *dirname, bool aflag, bool lflag, int depth)
 {
 	DIR *dirp;
 	struct dirent *dp;
@@ -197,7 +201,7 @@ void list_directory_depth(char *dirname, bool aflag, bool lflag,  int depth)
 	{
 		exit(EXIT_FAILURE);
 	}
-	if(depth==0)
+	/**if(depth==0)
 	{
 		//if((check_type(fullpath))==1){
 		//char *fullpath = malloc(pathlen + strlen(dp->d_name) + 2);
@@ -205,9 +209,9 @@ void list_directory_depth(char *dirname, bool aflag, bool lflag,  int depth)
 		//puts(fullpath);
 		//}
 		printf("%s\n",path);
-	}
+	}**/
 	
-	while((dp = readdir(dirp)) != NULL && depth!=0)
+	while((dp = readdir(dirp)) != NULL && depth>=0)
 	{
 		char *fullpath = malloc(pathlen + strlen(dp->d_name) + 2);
 		if (fullpath == NULL) {
@@ -227,8 +231,9 @@ void list_directory_depth(char *dirname, bool aflag, bool lflag,  int depth)
 				puts(fullpath);
 				}
 			
-			if ((check_type(fullpath))==2 && depth>1){
-				list_directory(fullpath,aflag,lflag,depth);
+			if ((check_type(fullpath))==2 && depth>0){
+				//depth++;
+				list_directory(fullpath,aflag,lflag);
 				depth--;
 			}
 			free(fullpath);
@@ -313,19 +318,6 @@ int count_all(char *dirname, bool aflag, int filecount)
 }**/
 
 void unlink_dir(char *pathname){
-    /**  
-    unlink_dir reads the directory and deletes everything inside.
-    if there is a directory inside the directory, it will traverse 
-    the directory and remove it too
-    **/
-	//printf("%s\n", pathname);
-	/**if((check_type(pathname))==1)//its a file
-	{
-		unlink(pathname);
-		exit(EXIT_SUCCESS);
-	}
-	else if ((check_type(pathname))==2)
-    {**/
 	DIR *dirp;
 	struct dirent *dp;
 	char *path = pathname;
@@ -360,9 +352,6 @@ void unlink_dir(char *pathname){
 	}
 
 	closedir(dirp);
-    
-	//exit(EXIT_SUCCESS);
-	//}
 }
 int read_args (int argc, char *argv[]){
 	int  opt;
@@ -431,7 +420,11 @@ int read_args (int argc, char *argv[]){
 	if(argc <= 0) {    //  display program's usage/help
 		fprintf(stderr,"Error: %s \nusage: ./cfind [options]  pathname  [stat-expression]\n", strerror(errno));
 	}
-
+	if (access(argv[optind], F_OK) != 0)
+	{
+		fprintf(stderr,"Error: \"%s\": %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", argv[optind], strerror(errno));
+		exit(EXIT_FAILURE); 		//exit indicating failure
+	}
 	if(cflag==1){
 		printf("%d\n",count_all(argv[optind],aflag, filecount));
 		exit(EXIT_SUCCESS);
@@ -449,12 +442,23 @@ int read_args (int argc, char *argv[]){
 		}
 	}
 	if(dflag==1){
-		list_directory_depth(argv[optind],aflag, lflag, depth);
-		printf("d d-done");
+		if (depth<0){
+			fprintf(stderr,"Error: %s \nDepth specified should not be negative.\nusage: ./cfind  [options]  pathname  [stat-expression]\n", strerror(errno));
+		}
+		list_directory_depth(argv[optind],aflag,lflag, depth);
 		exit(EXIT_SUCCESS);
 	}
-	list_directory(argv[optind],aflag,lflag, filecount);
-    //long_list_directory(argv[optind]);
+	if((check_type(argv[optind]))==1) //if it is a file, unlink the file
+		{
+			printf("%s\n",argv[optind]);
+            exit(EXIT_SUCCESS);
+		}
+		else if((check_type(argv[optind]))==2) //else if it's a directory, run our function
+		{
+			list_directory(argv[optind],aflag,lflag);
+            exit(EXIT_SUCCESS);
+		}
+
 	return 0;
 }
 /*int traverse_filesystem(int argc, char *argv[]){
@@ -501,6 +505,7 @@ int main (int argc, char *argv[])
 		//list_directory(argv[1]);
 		//read(argv[1]);
 		read_args(argc, argv);
+		
 	}
 	if (argc > 2){
 		//read_args(int argc, char *argv[]);
