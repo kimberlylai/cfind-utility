@@ -9,8 +9,8 @@ sorting<br>
   -size<br>
   -reverse<br>
 stat expressions<br>
-makefile/header file<br>
-minor<br>
+makefile/header file<br><br>
+<u>minor</u><br>
 -match no option sorting (captial letters before lowercase)<br>
 -remove ./ when in current directory<br>
 
