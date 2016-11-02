@@ -10,7 +10,7 @@ sorting<br>
   -reverse<br>
 stat expressions<br>
 makefile/header file<br><br>
-<u>minor</u><br>
+<b>minor</b><br>
 -match no option sorting (captial letters before lowercase)<br>
 -remove ./ when in current directory<br>
 
