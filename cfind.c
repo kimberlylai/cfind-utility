@@ -1,11 +1,10 @@
-/*
- CITS2002 Project 2 2016
+/*CITS2002 Project 2 2016
  Names:			    Kimberly Lai Siru, Braden Ryan
  Student numbers:	21818156, 20930745
  Date:			    04-11-2016
  */
 
-//This update fixed -u and added -a functionality to -u (15:14)
+//This update fixed -l (15:22)
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -108,11 +107,11 @@ void list_directory(char *dirname, bool aflag, bool lflag)
 			if (aflag == 1){
 				//filecount++;
 				sprintf(fullpath, "%s/%s", path, dp->d_name);
-				puts(fullpath);
-				if (stat(dp->d_name, &statbuf) != -1){
-					continue;
-				}
-				if (lflag == 1){
+				if (lflag == 1)
+				{
+                    
+				if (stat(fullpath, &statbuf) == 0)
+				{
 					printf("%llu\t",statbuf.st_ino);
 					//File permissions
 					printf( (S_ISDIR(statbuf.st_mode)) ? "d" : "-");
@@ -129,58 +128,74 @@ void list_directory(char *dirname, bool aflag, bool lflag)
 
 					printf("%hu\t",statbuf.st_nlink);
 					if ((pwd = getpwuid(statbuf.st_uid))!=NULL)
+					{
 						printf("%s\t", pwd->pw_name);
+					}
 					if ((grp = getgrgid(statbuf.st_gid))!=NULL)
+					{
 						printf("%s\t", grp->gr_name);
+					}
 					printf("%jd\t",(intmax_t)statbuf.st_size);
 					//Get localized date string
 					tm = localtime(&statbuf.st_mtime);
 					strftime(datestring, sizeof(datestring), nl_langinfo(D_T_FMT), tm);
 
-					printf(" %s", datestring);}
+					printf(" %s", datestring);
+				}
+					
+					
+				}
+				puts(fullpath);
+					
 
 
 			}
 			else{
-				if(dp->d_name[0]=='.') {
-					continue;
-				}
-				else{
-					//filecount++;
-					sprintf(fullpath, "%s/%s", path, dp->d_name);
-					puts(fullpath);
-					if (stat(dp->d_name, &statbuf) != -1){
-						continue;
-					}
-					if (lflag == 1){
-						printf("%llu\t",statbuf.st_ino);
-						printf( (S_ISDIR(statbuf.st_mode)) ? "d" : "-");
-						printf( (statbuf.st_mode & S_IRUSR) ? "r" : "-");
-						printf( (statbuf.st_mode & S_IWUSR) ? "w" : "-");
-						printf( (statbuf.st_mode & S_IXUSR) ? "x" : "-");
-						printf( (statbuf.st_mode & S_IRGRP) ? "r" : "-");
-						printf( (statbuf.st_mode & S_IWGRP) ? "w" : "-");
-						printf( (statbuf.st_mode & S_IXGRP) ? "x" : "-");
-						printf( (statbuf.st_mode & S_IROTH) ? "r" : "-");
-						printf( (statbuf.st_mode & S_IWOTH) ? "w" : "-");
-						printf( (statbuf.st_mode & S_IXOTH) ? "x" : "-");
-						printf("\t");
-						printf("%hu\t",statbuf.st_nlink);
-						if ((pwd = getpwuid(statbuf.st_uid))!=NULL)
-							printf("%s\t", pwd->pw_name);
-						if ((grp = getgrgid(statbuf.st_gid))!=NULL)
-							printf("%s\t", grp->gr_name);
-						printf("%jd\t",(intmax_t)statbuf.st_size);
-						//Get localized date string
-						tm = localtime(&statbuf.st_mtime);
-						strftime(datestring, sizeof(datestring), nl_langinfo(D_T_FMT), tm);
+                if(dp->d_name[0]=='.') {
+                    continue;
+                }
+                else{
+                   // filecount++;
+			if (lflag == 1)
+            {
+                sprintf(fullpath, "%s/%s", path, dp->d_name);
+            if (stat(fullpath, &statbuf) != -1)
+            {
+                printf("%llu\t",statbuf.st_ino);
+                printf( (S_ISDIR(statbuf.st_mode)) ? "d" : "-");
+                printf( (statbuf.st_mode & S_IRUSR) ? "r" : "-");
+                printf( (statbuf.st_mode & S_IWUSR) ? "w" : "-");
+                printf( (statbuf.st_mode & S_IXUSR) ? "x" : "-");
+                printf( (statbuf.st_mode & S_IRGRP) ? "r" : "-");
+                printf( (statbuf.st_mode & S_IWGRP) ? "w" : "-");
+                printf( (statbuf.st_mode & S_IXGRP) ? "x" : "-");
+                printf( (statbuf.st_mode & S_IROTH) ? "r" : "-");
+                printf( (statbuf.st_mode & S_IWOTH) ? "w" : "-");
+                printf( (statbuf.st_mode & S_IXOTH) ? "x" : "-");
+                printf("\t");
+                printf("%hu\t",statbuf.st_nlink);
+                if ((pwd = getpwuid(statbuf.st_uid))!=NULL)
+                    printf("%s\t", pwd->pw_name);
+                if ((grp = getgrgid(statbuf.st_gid))!=NULL)
+                    printf("%s\t", grp->gr_name);
+                printf("%jd\t",(intmax_t)statbuf.st_size);
+                //Get localized date string
+                tm = localtime(&statbuf.st_mtime);
+                strftime(datestring, sizeof(datestring), nl_langinfo(D_T_FMT), tm);
+                
+                printf(" %s\t", datestring);
+            }
 
-						printf(" %s", datestring);}
-					sprintf(fullpath, "%s/%s", path, dp->d_name);
-					puts(fullpath);
+                    }
+                    
+                    puts(fullpath);
+                
+                    
+                    
+                    
+                }
+            }
 
-				}
-			}
 			if ((check_type(fullpath))==2){
 				list_directory(fullpath,aflag,lflag);
 			}
@@ -542,3 +557,4 @@ int main (int argc, char *argv[])
 
 
 }
+
