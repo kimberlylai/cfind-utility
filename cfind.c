@@ -4,7 +4,7 @@
  Date:			    04-11-2016
  */
 
-//This update fixed -l (15:22)
+//This update fixed lots (16:10)
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -140,12 +140,14 @@ void list_directory(char *dirname, bool aflag, bool lflag)
 					tm = localtime(&statbuf.st_mtime);
 					strftime(datestring, sizeof(datestring), nl_langinfo(D_T_FMT), tm);
 
-					printf(" %s", datestring);
+					printf(" %s\t", datestring);
 				}
 					
 					
 				}
-				puts(fullpath);
+                
+                    puts(fullpath);
+            
 					
 
 
@@ -156,9 +158,10 @@ void list_directory(char *dirname, bool aflag, bool lflag)
                 }
                 else{
                    // filecount++;
+                    sprintf(fullpath, "%s/%s", path, dp->d_name);
 			if (lflag == 1)
             {
-                sprintf(fullpath, "%s/%s", path, dp->d_name);
+                //sprintf(fullpath, "%s/%s", path, dp->d_name);
             if (stat(fullpath, &statbuf) != -1)
             {
                 printf("%llu\t",statbuf.st_ino);
@@ -188,7 +191,9 @@ void list_directory(char *dirname, bool aflag, bool lflag)
 
                     }
                     
-                    puts(fullpath);
+                    //if(fullpath!=dirname){
+                        puts(fullpath);
+                //}
                 
                     
                     
@@ -496,6 +501,7 @@ int read_args (int argc, char *argv[]){
 	}
 	else if((check_type(argv[optind]))==2) //else if it's a directory, run our function
 	{
+        //printf("%s\n",argv[optind]);
 		list_directory(argv[optind],aflag,lflag);
 		exit(EXIT_SUCCESS);
 	}
