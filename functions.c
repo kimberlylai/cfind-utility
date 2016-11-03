@@ -27,6 +27,57 @@
 
 #define	OPTLIST		"acd:lrstu"
 
+void qs_struct(struct dirent **namelist, int left, int right) {
+    
+    int i;
+    int j;
+    
+    struct dirent *temp;
+    struct stat ibuf;
+    struct stat jbuf;
+    struct stat xbuf;
+    
+    i = left; j = right;
+    
+    stat(namelist[i]->d_name, &ibuf);
+    stat(namelist[j]->d_name, &jbuf);
+    stat(namelist[(left+right)/2]->d_name, &xbuf);
+    
+    
+    do {
+        while((ibuf.st_mtime < xbuf.st_mtime) && (i < right)) {
+            i++;
+            stat(namelist[i]->d_name, &ibuf);
+        }
+        while((jbuf.st_mtime > xbuf.st_mtime) && (j > left))  {
+            j--;
+            stat(namelist[j]->d_name, &jbuf);
+        }
+        if(i <= j) {
+            temp = namelist[i];
+            namelist[i] = namelist[j];
+            namelist[j] = temp;
+            
+            
+            i++; j--;
+            stat(namelist[i]->d_name, &ibuf);
+            stat(namelist[j]->d_name, &jbuf);
+            
+        }
+        
+    } while(i <= j);
+    
+    if(left < j) qs_struct(namelist, left, j);
+    if(i < right) qs_struct(namelist, i, right);
+    
+    
+}
+
+void quick_struct(struct dirent **namelist, int count) {
+    qs_struct(namelist,0,count-1);
+}
+
+
 int check_type(char *pathname) {
 	//checks if pathname specified is a file or a directories
 	//use dirent DTYPE
@@ -638,7 +689,50 @@ int read_args(int argc, char *argv[]) {
 		printf("%d\n", count_all(argv[optind], aflag, filecount));
 		exit(EXIT_SUCCESS);
 	}
-	//copy this
+	if (tflag==1)
+    {
+
+           struct dirent **namelist;
+           int n;
+           const char *targetdirectory = ".";
+           struct tm   *tm;
+           char datestring[256];
+
+            
+            n = scandir(targetdirectory, &namelist, 0, alphasort);
+            
+            struct stat statbuf;
+            
+            if (n < 0)
+                perror("scandir");
+            else {
+                               {
+                quick_struct(namelist, n);
+                
+                while (n--)
+                {
+                    if ((strcmp(namelist[n]->d_name, ".") && strcmp(namelist[n]->d_name, "..")) == 0)
+                        continue;
+                    
+                    stat(namelist[n]->d_name, &statbuf);
+                    tm = localtime(&statbuf.st_mtime);
+                    strftime(datestring, sizeof(datestring), nl_langinfo(D_T_FMT), tm);
+                    
+                    //printf(" %s\n", datestring);
+                    printf("%s\n", namelist[n]->d_name);
+                    
+                    
+                    free(namelist[n]);
+                }
+                
+                free(namelist);
+               }
+            }
+        
+        exit(EXIT_SUCCESS);
+   
+    }
+
 	if (uflag == 1 && dflag == 0) {
 		if ((check_type(argv[optind])) == 1) //if it is a file, unlink the file
 		{
