@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE); 		//exit indicating failure	
 	}
 
-	if (argc > 2)
+	if (argc >= 2)
 	{
 		read_args(argc, argv);
  }
