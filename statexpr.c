@@ -8,7 +8,7 @@
 #include <sys/param.h>
 #include <regex.h>
 
-#include <statexpr.h>
+#include "statexpr.h"
 
 //  statexpr.c, written by Chris.McDonald@uwa.edu.au
 
