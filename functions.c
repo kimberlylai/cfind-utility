@@ -659,7 +659,7 @@ int read_args(int argc, char *argv[]) {
 		{
 			fprintf(stderr, "Error: %s \nDepth specified should not be negative.\nusage: ./cfind  [options]  pathname  [stat-expression]\n", strerror(errno));
 		}
-		list_directory_depth(argv[optind], aflag, lflag, depth);
+		list_directory_depth(argv[optind], aflag, lflag, depth, *options);
 		exit(EXIT_SUCCESS);
 	}
 	if ((check_type(argv[optind])) == 1) //if it is a file, unlink the file
