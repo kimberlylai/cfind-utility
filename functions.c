@@ -27,66 +27,66 @@
 
 #define	OPTLIST		"acd:lrstu"
 
-void qs_struct(struct dirent **namelist, int left, int right) 
+void sort_struct(struct dirent **namelist, int left, int right) 
 {
 
-	int i;
-	int j;
+	int sortleft;
+	int sortright;
 
 	struct dirent *temp;
-	struct stat ibuf;
-	struct stat jbuf;
-	struct stat xbuf;
-	i = left; j = right;
+	struct stat i_buffer;
+	struct stat j_buffer;
+	struct stat x_buffer;
+	sortleft = left; sortright = right;
 
-	stat(namelist[i]->d_name, &ibuf);
-	stat(namelist[j]->d_name, &jbuf);
-	stat(namelist[(left + right) / 2]->d_name, &xbuf);
+	stat(namelist[sortleft]->d_name, &i_buffer);
+	stat(namelist[sortright]->d_name, &j_buffer);
+	stat(namelist[(left + right) / 2]->d_name, &x_buffer);
 
 	do {
-		while ((ibuf.st_mtime < xbuf.st_mtime) && (i < right))
+		while ((i_buffer.st_mtime < x_buffer.st_mtime) && (sortleft < right))
 		{
-			i++;
-			stat(namelist[i]->d_name, &ibuf);
+			sortleft++;
+			stat(namelist[sortleft]->d_name, &i_buffer);
 		}
-		while ((jbuf.st_mtime > xbuf.st_mtime) && (j > left))
+		while ((j_buffer.st_mtime > x_buffer.st_mtime) && (sortright > left))
 		{
-			j--;
-			stat(namelist[j]->d_name, &jbuf);
+			sortright--;
+			stat(namelist[sortright]->d_name, &j_buffer);
 		}
-		if (i <= j) 
+		if (sortleft <= sortright) 
 		{
-			temp = namelist[i];
-			namelist[i] = namelist[j];
-			namelist[j] = temp;
-			i++; j--;
-			stat(namelist[i]->d_name, &ibuf);
-			stat(namelist[j]->d_name, &jbuf);
+			temp = namelist[sortleft];
+			namelist[sortleft] = namelist[sortright];
+			namelist[sortright] = temp;
+			sortleft++; sortright--;
+			stat(namelist[sortleft]->d_name, &i_buffer);
+			stat(namelist[sortright]->d_name, &j_buffer);
 		}
 	} 
-	while (i <= j);
-	if (left < j) qs_struct(namelist, left, j);
-	if (i < right) qs_struct(namelist, i, right);
+	while (sortleft <= sortright);
+	if (left < sortright) sort_struct(namelist, left, sortright);
+	if (sortleft < right) sort_struct(namelist, sortleft, right);
 }
 
 void quick_struct(struct dirent **namelist, int count)
 {
-	qs_struct(namelist, 0, count - 1);
+	sort_struct(namelist, 0, count - 1);
 }
 
 
-int check_type(char *pathname) 
+bool check_type(char *pathname) 
 {
 	//checks if pathname specified is a file or a directories
 	//use dirent DTYPE
-	//if file return 1
-	//if dir return 2
+	//if it is a file, return 1
+	//if it is a dir, return 0
 	struct stat statbuf;
 	if (stat(pathname, &statbuf) == 0)
 	{
 		if (statbuf.st_mode & S_IFDIR) //if it is a dir
 		{
-			return 2;
+			return 0;
 		}
 		else if (statbuf.st_mode & S_IFREG) //if it's a file
 		{
@@ -128,8 +128,9 @@ void list_directory_stat_exp(char *dirname, bool aflag, bool lflag, STAT_EXPRESS
 
 		if (fullpath == NULL)
 		{
-			// Deal with error and exit 
-			printf("Error");
+			//if NULL. print error and exit
+			fprintf(stderr, "Error: %s: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", argv[optind], strerror(errno));
+			exit(EXIT_FAILURE); 		//exit indicating failure
 		}
 		if ((strcmp(dp->d_name, ".") && strcmp(dp->d_name, "..")) == 0)
 		{
@@ -216,7 +217,7 @@ void list_directory_stat_exp(char *dirname, bool aflag, bool lflag, STAT_EXPRESS
 						puts(fullpath);
 					}
 				}
-				if ((check_type(fullpath)) == 2) 
+				if ((check_type(fullpath)) == 0) 
 				{
 					list_directory_stat_exp(fullpath, aflag, lflag, statexpr);
 				}
@@ -252,8 +253,10 @@ void list_directory(char *dirname, bool aflag, bool lflag)
 		char *fullpath = malloc(pathlen + strlen(dp->d_name) + 2);
 		if (fullpath == NULL)
 		{
-			/* deal with error and exit */
-			printf("Error");
+			//if NULL. print error and exit//if NULL. print error and exit
+			fprintf(stderr, "Error: %s: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", argv[optind], strerror(errno));
+			exit(EXIT_FAILURE); 		//exit indicating failure
+			
 		}
 		if ((strcmp(dp->d_name, ".") && strcmp(dp->d_name, "..")) == 0)
 		{
@@ -340,7 +343,7 @@ void list_directory(char *dirname, bool aflag, bool lflag)
 				}
 			}
 
-			if ((check_type(fullpath)) == 2) 
+			if ((check_type(fullpath)) == 0) 
 			{
 				list_directory(fullpath, aflag, lflag);
 			}
@@ -370,8 +373,10 @@ void list_directory_depth(char *dirname, bool aflag, bool lflag, int depth)
 	{
 		char *fullpath = malloc(pathlen + strlen(dp->d_name) + 2);
 		if (fullpath == NULL) {
-			/* deal with error and exit */
-			printf("Error");
+			//if NULL. print error and exit//if NULL. print error and exit
+			fprintf(stderr, "Error: %s: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", argv[optind], strerror(errno));
+			exit(EXIT_FAILURE); 		//exit indicating failure
+			
 		}
 		//printf("%s/%s\n",path, ep->d_name);
 		if ((strcmp(dp->d_name, ".") && strcmp(dp->d_name, "..")) == 0)
@@ -392,7 +397,7 @@ void list_directory_depth(char *dirname, bool aflag, bool lflag, int depth)
 				puts(fullpath);
 			}
 
-			if ((check_type(fullpath)) == 2 && depth > 0)
+			if ((check_type(fullpath)) == 0 && depth > 0)
 			{
 				//depth++;
 				list_directory(fullpath, aflag, lflag);
@@ -423,8 +428,10 @@ int count_all(char *dirname, bool aflag, int filecount)
 	{
 		char *fullpath = malloc(pathlen + strlen(dp->d_name) + 2);
 		if (fullpath == NULL) {
-			/* deal with error and exit */
-			printf("Error");
+			//if NULL. print error and exit//if NULL. print error and exit
+			fprintf(stderr, "Error: %s: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", argv[optind], strerror(errno));
+			exit(EXIT_FAILURE); 		//exit indicating failure
+			
 		}
 		if ((strcmp(dp->d_name, ".") && strcmp(dp->d_name, "..")) == 0)
 		{
@@ -450,7 +457,7 @@ int count_all(char *dirname, bool aflag, int filecount)
 					sprintf(fullpath, "%s/%s", path, dp->d_name);
 				}
 			}
-			if ((check_type(fullpath)) == 2) 
+			if ((check_type(fullpath)) == 0) 
 			{
 				filecount = count_all(fullpath, aflag, filecount);
 			}
@@ -480,8 +487,10 @@ void unlink_dir(char *pathname, bool aflag)
 		char *fullpath = malloc(pathlen + strlen(dp->d_name) + 2);
 		if (fullpath == NULL)
 		{
-			/* deal with error and exit */
-			printf("Error");
+			//if NULL. print error and exit//if NULL. print error and exit
+			fprintf(stderr, "Error: %s: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", argv[optind], strerror(errno));
+			exit(EXIT_FAILURE); 		//exit indicating failure
+			
 		}
 		if ((strcmp(dp->d_name, ".") && strcmp(dp->d_name, "..")) == 0)
 		{
@@ -499,7 +508,7 @@ void unlink_dir(char *pathname, bool aflag)
 					//Remove the files
 					unlink(fullpath);
 				}
-				else if ((check_type(fullpath)) == 2) 
+				else if ((check_type(fullpath)) == 0) 
 				{
 					//Remove the (now empty) directory
 					unlink_dir(fullpath, aflag);
@@ -520,7 +529,7 @@ void unlink_dir(char *pathname, bool aflag)
 						//Remove the files
 						unlink(fullpath);
 					}
-					else if ((check_type(fullpath)) == 2) 
+					else if ((check_type(fullpath)) == 0) 
 					{
 						//Remove the (now empty) directory
 						unlink_dir(fullpath, aflag);
@@ -556,8 +565,10 @@ void unlink_dir_depth(char *pathname, bool aflag, bool dflag, int depth)
 		char *fullpath = malloc(pathlen + strlen(dp->d_name) + 2);
 		if (fullpath == NULL) 
 		{
-			// Deal with error and exit
-			printf("Error");
+			//if NULL. print error and exit//if NULL. print error and exit
+			fprintf(stderr, "Error: %s: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", argv[optind], strerror(errno));
+			exit(EXIT_FAILURE); 		//exit indicating failure
+			
 		}
 		if ((strcmp(dp->d_name, ".") && strcmp(dp->d_name, "..")) == 0) 
 		{
@@ -578,7 +589,7 @@ void unlink_dir_depth(char *pathname, bool aflag, bool dflag, int depth)
 				{
 					unlink(fullpath);
 				}
-				else if ((check_type(fullpath)) == 2 && depth > 0) 
+				else if ((check_type(fullpath)) == 0 && depth > 0) 
 				{
 					rmdir(fullpath); //Remove the (now empty) directory
 					if (rmdir(fullpath) == -1)
@@ -588,7 +599,7 @@ void unlink_dir_depth(char *pathname, bool aflag, bool dflag, int depth)
 					depth--;
 					unlink_dir_depth(fullpath, aflag, dflag, depth);
 				}
-				else if (check_type(fullpath) == 2 && depth == 0)
+				else if (check_type(fullpath) == 0 && depth == 0)
 				{
 					if (rmdir(fullpath) == -1)
 					{
@@ -615,7 +626,7 @@ void unlink_dir_depth(char *pathname, bool aflag, bool dflag, int depth)
 					{
 						unlink(fullpath);
 					}
-					else if ((check_type(fullpath)) == 2 && depth > 0)
+					else if ((check_type(fullpath)) == 0 && depth > 0)
 					{
 						rmdir(fullpath); //remove the (now empty) directory
 						if (rmdir(fullpath) == -1) 
@@ -625,7 +636,7 @@ void unlink_dir_depth(char *pathname, bool aflag, bool dflag, int depth)
 						depth--;
 						unlink_dir_depth(fullpath, aflag, dflag, depth);
 					}
-					else if (check_type(fullpath) == 2 && depth == 0) 
+					else if (check_type(fullpath) == 0 && depth == 0) 
 					{
 						if (rmdir(fullpath) == -1) 
 						{
@@ -738,8 +749,10 @@ int read_args(int argc, char *argv[])
 				while (n--)
 				{
 					if ((strcmp(namelist[n]->d_name, ".") && strcmp(namelist[n]->d_name, "..")) == 0)
-						//Ignore . and ..
+					{
+						//ignore . & ..
 						continue;
+					}
 					stat(namelist[n]->d_name, &statbuf);
 					tm = localtime(&statbuf.st_mtime);
 					strftime(datestring, sizeof(datestring), nl_langinfo(D_T_FMT), tm);
@@ -759,7 +772,7 @@ int read_args(int argc, char *argv[])
 			unlink((argv[optind]));
 			exit(EXIT_SUCCESS);
 		}
-		else if ((check_type(argv[optind])) == 2) //else if it's a directory, run our function
+		else if ((check_type(argv[optind])) == 0) //else if it's a directory, run our function
 		{
 			unlink_dir(argv[optind], aflag);
 			exit(EXIT_SUCCESS);
@@ -772,7 +785,7 @@ int read_args(int argc, char *argv[])
 			unlink((argv[optind]));
 			exit(EXIT_SUCCESS);
 		}
-		else if ((check_type(argv[optind])) == 2) //else if it's a directory, run our function
+		else if ((check_type(argv[optind])) == 0) //else if it's a directory, run our function
 		{
 			unlink_dir_depth(argv[optind], aflag, dflag, depth);
 			exit(EXIT_SUCCESS);
@@ -799,7 +812,7 @@ int read_args(int argc, char *argv[])
 		printf("%s\n", argv[optind]);
 		exit(EXIT_SUCCESS);
 	}
-	else if ((check_type(argv[optind])) == 2) //else if it's a directory, run our function
+	else if ((check_type(argv[optind])) == 0) //else if it's a directory, run our function
 	{
 		//printf("%s\n",argv[optind]);
 		list_directory(argv[optind], aflag, lflag);
