@@ -14,4 +14,6 @@ int count_all(char *dirname, bool aflag, int filecount);
 
 void unlink_dir(char *pathname, bool aflag);
 
+void unlink_dir_depth(char *pathname, bool aflag, bool dflag, int depth);
+
 int read_args (int argc, char *argv[]);
