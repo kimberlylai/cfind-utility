@@ -462,6 +462,93 @@ void unlink_dir(char *pathname, bool aflag) {
 
 	closedir(dirp);
 }
+
+void unlink_dir_depth(char *pathname, bool aflag, bool dflag, int depth) {
+	DIR *dirp;
+	struct dirent *dp;
+	char *path = pathname;
+	size_t pathlen = strlen(pathname);
+	dirp = opendir(pathname);
+	if (dirp == NULL)
+	{
+		exit(EXIT_FAILURE);
+	}
+	while ((dp = readdir(dirp)) != NULL && depth >= 0)
+	{
+		char *fullpath = malloc(pathlen + strlen(dp->d_name) + 2);
+		if (fullpath == NULL) {
+			/* deal with error and exit */
+			printf("Error");
+		}
+		//printf("%s/%s\n",path, ep->d_name);
+		if ((strcmp(dp->d_name, ".") && strcmp(dp->d_name, "..")) == 0) {
+			continue;
+		}
+		else {
+			if (aflag == 1) {
+				//sprintf(fullpath, "%s/%s", path, dp->d_name);
+				sprintf(fullpath, "%s/%s", path, dp->d_name);
+				//depth--;
+				if (check_type(fullpath) == 1 && depth>0) {
+					unlink(fullpath);
+				}
+				else if (check_type(fullpath) == 1 && depth == 0) {
+					unlink(fullpath);
+				}
+				else if ((check_type(fullpath)) == 2 && depth>0) {
+					//depth++;
+					rmdir(fullpath); //remove the (now empty) directory
+					if (rmdir(fullpath) == -1) {
+						fprintf(stderr, "Error: %s: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", fullpath, strerror(errno));
+					}
+					depth--;
+					unlink_dir_depth(fullpath, aflag, dflag, depth);
+				}
+				else if (check_type(fullpath) == 2 && depth == 0) {
+					if (rmdir(fullpath) == -1) {
+						fprintf(stderr, "Error: %s: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", fullpath, strerror(errno));
+					}
+					rmdir(fullpath); //remove the (now empty) directory
+				}
+			}
+			else {
+				if (dp->d_name[0] == '.') {
+					continue;
+				}
+				else {
+					sprintf(fullpath, "%s/%s", path, dp->d_name);
+					//depth--;
+					if (check_type(fullpath) == 1 && depth>0) {
+						unlink(fullpath);
+					}
+					else if (check_type(fullpath) == 1 && depth == 0) {
+						unlink(fullpath);
+					}
+					else if ((check_type(fullpath)) == 2 && depth>0) {
+						//depth++;
+						rmdir(fullpath); //remove the (now empty) directory
+						if (rmdir(fullpath) == -1) {
+							fprintf(stderr, "Error: %s: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", fullpath, strerror(errno));
+						}
+						depth--;
+						unlink_dir_depth(fullpath, aflag, dflag, depth);
+					}
+					else if (check_type(fullpath) == 2 && depth == 0) {
+						if (rmdir(fullpath) == -1) {
+							fprintf(stderr, "Error: %s: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", fullpath, strerror(errno));
+						}
+						rmdir(fullpath); //remove the (now empty) directory
+					}
+				}
+			}
+			free(fullpath);
+
+		}
+
+	}
+	closedir(dirp);
+}
+
 int read_args(int argc, char *argv[]) {
 	int  opt;
 	bool aflag = false; //all entries be considered, including file-entries beginning with the '.' character
@@ -542,7 +629,8 @@ int read_args(int argc, char *argv[]) {
 		printf("%d\n", count_all(argv[optind], aflag, filecount));
 		exit(EXIT_SUCCESS);
 	}
-	if (uflag == 1) {
+	//copy this
+	if (uflag == 1 && dflag == 0) {
 		if ((check_type(argv[optind])) == 1) //if it is a file, unlink the file
 		{
 			unlink((argv[optind]));
@@ -554,12 +642,24 @@ int read_args(int argc, char *argv[]) {
 			exit(EXIT_SUCCESS);
 		}
 	}
-	if (dflag == 1) {
-		if (depth < 0)
+	if (uflag == 1 && dflag == 1) {
+		if ((check_type(argv[optind])) == 1) //if it is a file, unlink the file
+		{
+			unlink((argv[optind]));
+			exit(EXIT_SUCCESS);
+		}
+		else if ((check_type(argv[optind])) == 2) //else if it's a directory, run our function
+		{
+			unlink_dir_depth(argv[optind], aflag, dflag, depth);
+			exit(EXIT_SUCCESS);
+		}
+	}
+	if (dflag == 1 && uflag == 0) {
+		if (depth<0)
 		{
 			fprintf(stderr, "Error: %s \nDepth specified should not be negative.\nusage: ./cfind  [options]  pathname  [stat-expression]\n", strerror(errno));
 		}
-		list_directory_depth(argv[optind], aflag, lflag, depth, *options);
+		list_directory_depth(argv[optind], aflag, lflag, depth);
 		exit(EXIT_SUCCESS);
 	}
 	if ((check_type(argv[optind])) == 1) //if it is a file, unlink the file
@@ -576,29 +676,4 @@ int read_args(int argc, char *argv[]) {
 
 	return 0;
 }
-/*int traverse_filesystem(int argc, char *argv[]){
-	read_args(int argc, char *argv[]);
-	return 0;
- }*/
-int read_all(char *pathname) {
-	return 0;
-}
-int count(char *pathname) {
-	return 0;
-}
-int depth(char *pathname, int value) {
-	return 0;
-}
-int long_list(char *pathname) {
-	return 0;
-}
-int reverse_sort(char *pathname) {
-	return 0;
-}
-int size_sort(char *pathname) {
 
-	return 0;
-}
-int time_sort(char *pathname) {
-	return 0;
-}
