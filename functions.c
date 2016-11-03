@@ -52,7 +52,7 @@ int check_type(char *pathname) {
 	exit(EXIT_FAILURE);
 
 }
-void list_directory_stat_exp(char *dirname, bool aflag, bool lflag, char *options)
+void list_directory_stat_exp(char *dirname, bool aflag, bool lflag, STAT_EXPRESSION statexpr)
 {
 	DIR *dirp;
 	struct dirent *dp;
@@ -64,7 +64,7 @@ void list_directory_stat_exp(char *dirname, bool aflag, bool lflag, char *option
 	struct group *grp;
 	struct tm   *tm;
 	char datestring[256];
-	STAT_EXPRESSION statexpr = compile_stat_expression(options);
+	//STAT_EXPRESSION statexpr = compile_stat_expression(options);
 
 	if (dirp == NULL)
 	{
@@ -72,7 +72,10 @@ void list_directory_stat_exp(char *dirname, bool aflag, bool lflag, char *option
 	}
 	while ((dp = readdir(dirp)) != NULL)
 	{
+		const char *name = dp->d_name;
 		char *fullpath = malloc(pathlen + strlen(dp->d_name) + 2);
+		//bool ans = ;
+		
 		if (fullpath == NULL)
 		{
 			/* deal with error and exit */
@@ -85,8 +88,16 @@ void list_directory_stat_exp(char *dirname, bool aflag, bool lflag, char *option
 
 		else {
 			sprintf(fullpath, "%s/%s", path, dp->d_name);
-			if (evaluate_stat_expression(statexpr, dp->d_name, &statbuf) == 1)
+			if (stat(fullpath, &statbuf) != 0){
+			continue;
+			}
+			else if ( evaluate_stat_expression(statexpr, name, &statbuf) == 1)
 			{
+				
+				//printf(" %d\n",evaluate_stat_expression(statexpr, name, &statbuf));
+				//printf("%s is a match!\n",name);
+				
+				
 				if (aflag == 1) {
 					//filecount++;
 					sprintf(fullpath, "%s/%s", path, dp->d_name);
@@ -182,7 +193,7 @@ void list_directory_stat_exp(char *dirname, bool aflag, bool lflag, char *option
 					}
 				}
 				if ((check_type(fullpath)) == 2) {
-					list_directory_stat_exp(fullpath, aflag, lflag, options);
+					list_directory_stat_exp(fullpath, aflag, lflag, statexpr);
 				}
 			}
 
@@ -192,8 +203,9 @@ void list_directory_stat_exp(char *dirname, bool aflag, bool lflag, char *option
 
 	}
 	closedir(dirp);
+	
 }
-void list_directory(char *dirname, bool aflag, bool lflag, char *options)
+void list_directory(char *dirname, bool aflag, bool lflag)
 {
 	DIR *dirp;
 	struct dirent *dp;
@@ -301,7 +313,7 @@ void list_directory(char *dirname, bool aflag, bool lflag, char *options)
 			}
 
 			if ((check_type(fullpath)) == 2) {
-				list_directory(fullpath, aflag, lflag, options);
+				list_directory(fullpath, aflag, lflag);
 			}
 			free(fullpath);
 		}
@@ -309,7 +321,7 @@ void list_directory(char *dirname, bool aflag, bool lflag, char *options)
 	}
 	closedir(dirp);
 }
-void list_directory_depth(char *dirname, bool aflag, bool lflag, int depth, char options)
+void list_directory_depth(char *dirname, bool aflag, bool lflag, int depth)
 {
 	DIR *dirp;
 	struct dirent *dp;
@@ -345,7 +357,7 @@ void list_directory_depth(char *dirname, bool aflag, bool lflag, int depth, char
 
 			if ((check_type(fullpath)) == 2 && depth > 0) {
 				//depth++;
-				list_directory(fullpath, aflag, lflag, &options);
+				list_directory(fullpath, aflag, lflag);
 				depth--;
 			}
 			free(fullpath);
@@ -562,7 +574,7 @@ int read_args(int argc, char *argv[]) {
 	//char *filenm = NULL;
 	int  depth = 0; //Limit the search to the indicated depth, descending at most depth levels
 	int filecount = 0;
-	char *options;
+	const char *options;
 
 
 	while ((opt = getopt(argc, argv, OPTLIST)) != -1) {
@@ -621,10 +633,7 @@ int read_args(int argc, char *argv[]) {
 		fprintf(stderr, "Error: %s: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", argv[optind], strerror(errno));
 		exit(EXIT_FAILURE); 		//exit indicating failure
 	}
-	if (argv[optind + 1] != NULL)
-	{
-		options = argv[optind + 1];
-	}
+
 	if (cflag == 1) {
 		printf("%d\n", count_all(argv[optind], aflag, filecount));
 		exit(EXIT_SUCCESS);
@@ -659,7 +668,13 @@ int read_args(int argc, char *argv[]) {
 		{
 			fprintf(stderr, "Error: %s \nDepth specified should not be negative.\nusage: ./cfind  [options]  pathname  [stat-expression]\n", strerror(errno));
 		}
-		list_directory_depth(argv[optind], aflag, lflag, depth, *options);
+		list_directory_depth(argv[optind], aflag, lflag, depth);
+		exit(EXIT_SUCCESS);
+	}
+	if (argv[optind+1]!=NULL){
+		STAT_EXPRESSION statexpr = compile_stat_expression(argv[optind+1]);
+
+		list_directory_stat_exp(argv[optind], aflag, lflag, statexpr);
 		exit(EXIT_SUCCESS);
 	}
 	if ((check_type(argv[optind])) == 1) //if it is a file, unlink the file
@@ -670,9 +685,10 @@ int read_args(int argc, char *argv[]) {
 	else if ((check_type(argv[optind])) == 2) //else if it's a directory, run our function
 	{
 		//printf("%s\n",argv[optind]);
-		list_directory(argv[optind], aflag, lflag, options);
+		list_directory(argv[optind], aflag, lflag);
 		exit(EXIT_SUCCESS);
 	}
+
 
 	return 0;
 }
