@@ -1,12 +1,8 @@
-C99 = cc -std=c99
-CFLAGS = -Wall -pedantic -Werror 
-
-
-
-
-cfind : cfind.c read.o /cslinux/adhoc/lib/libstatexpr-osx.a
-  $(C99) $(CFLAGS) -o cfind cfind.c read.o -libstatexpr
-read.o : cfind.h read.c /cslinux/adhoc/lib/libstatexpr-osx.a
-  $(C99) $(CFLAGS) -c -o read.o read.c -libstatexpr
-
-//cfind.h
+cfind : cfind.o parsedate.o statexpr.o
+    cc -std=c99 -Wall -pedantic -Werror -o cfind cfind.o parsedate.o statexpr.o
+cfind.o : cfind.c statexpr.h
+    cc -std=c99 -Wall -pedantic -Werror -c cfind.c
+parsedate.o : parsedate.c statexpr.h
+    cc -std=c99 -Wall -pedantic -Werror -c parsedate.c
+statexpr.o : statexpr.c statexpr.h
+    cc -std=c99 -Wall -pedantic -Werror -c statexpr.c
