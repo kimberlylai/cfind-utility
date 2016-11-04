@@ -56,7 +56,7 @@ bool check_type(char *pathname)
 
 void sort_struct_time(struct dirent **namelist, int left, int right) 
 {
-
+	//Sorts stat structure by last modified time
 	int sortleft;
 	int sortright;
 
@@ -95,9 +95,10 @@ void sort_struct_time(struct dirent **namelist, int left, int right)
 	if (left < sortright) sort_struct_time(namelist, left, sortright);
 	if (sortleft < right) sort_struct_time(namelist, sortleft, right);
 }
+
 void sort_struct_size(struct dirent **namelist, int left, int right) 
 {
-
+	//Sorts stat structure by size
 	int sortleft;
 	int sortright;
 
@@ -136,6 +137,7 @@ void sort_struct_size(struct dirent **namelist, int left, int right)
 	if (left < sortright) sort_struct_size(namelist, left, sortright);
 	if (sortleft < right) sort_struct_size(namelist, sortleft, right);
 }
+
 void quick_struct(struct dirent **namelist, int count, bool tflag, bool sflag)
 {
 	if(tflag==1 && sflag ==0)
@@ -152,6 +154,7 @@ void quick_struct(struct dirent **namelist, int count, bool tflag, bool sflag)
 		sort_struct_size(namelist, 0, count - 1);
 	}
 }
+
 void sort_time(char *pathname, bool tflag, bool sflag, bool aflag, bool lflag){
 		struct dirent **namelist;
 		int n;
@@ -407,7 +410,6 @@ void list_directory(char *dirname, bool aflag, bool lflag)
 			//if NULL. print error and exit//if NULL. print error and exit
 			fprintf(stderr, "Error: %s: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", fullpath, strerror(errno));
 			exit(EXIT_FAILURE); 		//exit indicating failure
-			
 		}
 		if ((strcmp(dp->d_name, ".") && strcmp(dp->d_name, "..")) == 0)
 		{
@@ -423,8 +425,7 @@ void list_directory(char *dirname, bool aflag, bool lflag)
 				{
 					if (stat(fullpath, &statbuf) == 0)
 					{
-						printf("%llu\t", statbuf.st_ino);
-						//File permissions
+						printf("%llu\t", statbuf.st_ino); //Print inode
 						printf((S_ISDIR(statbuf.st_mode)) ? "d" : "-");
 						printf((statbuf.st_mode & S_IRUSR) ? "r" : "-");
 						printf((statbuf.st_mode & S_IWUSR) ? "w" : "-");
@@ -434,22 +435,17 @@ void list_directory(char *dirname, bool aflag, bool lflag)
 						printf((statbuf.st_mode & S_IXGRP) ? "x" : "-");
 						printf((statbuf.st_mode & S_IROTH) ? "r" : "-");
 						printf((statbuf.st_mode & S_IWOTH) ? "w" : "-");
-						printf((statbuf.st_mode & S_IXOTH) ? "x" : "-");
+						printf((statbuf.st_mode & S_IXOTH) ? "x" : "-"); //Print permissions
 						printf("\t");
-						printf("%hu\t", statbuf.st_nlink);
+						printf("%hu\t", statbuf.st_nlink); //Print links
 						if ((pwd = getpwuid(statbuf.st_uid)) != NULL)
-						{
-							printf("%s\t", pwd->pw_name);
-						}
+							printf("%s\t", pwd->pw_name); //Print owner
 						if ((grp = getgrgid(statbuf.st_gid)) != NULL)
-						{
-							printf("%s\t", grp->gr_name);
-						}
-						printf("%jd\t", (intmax_t)statbuf.st_size);
-						//Get localized date string
-						tm = localtime(&statbuf.st_mtime);
+							printf("%s\t", grp->gr_name);//Print group
+						printf("%jd\t", (intmax_t)statbuf.st_size); //Print size
+						tm = localtime(&statbuf.st_mtime);//Get localized date string
 						strftime(datestring, sizeof(datestring), nl_langinfo(D_T_FMT), tm);
-						printf(" %s\t", datestring);
+						printf(" %s\t", datestring);//Print date
 					}
 				}
 				puts(fullpath);
@@ -493,14 +489,12 @@ void list_directory(char *dirname, bool aflag, bool lflag)
 					puts(fullpath);
 				}
 			}
-
 			if ((check_type(fullpath)) == 0) 
 			{
 				list_directory(fullpath, aflag, lflag);
 			}
 			free(fullpath);
 		}
-
 	}
 	closedir(dirp);
 }
@@ -513,7 +507,6 @@ void list_directory_depth(char *dirname, bool aflag, bool lflag, int depth)
 	char *path = dirname;
 	size_t pathlen = strlen(dirname);
 	dirp = opendir(dirname);
-
 
 	if (dirp == NULL)
 	{
@@ -539,18 +532,17 @@ void list_directory_depth(char *dirname, bool aflag, bool lflag, int depth)
 		{
 			if (dp->d_name[0] == '.')
 			{
+				//Ignore hidden files
 				continue;
 			}
 			else 
 			{
 				sprintf(fullpath, "%s/%s", path, dp->d_name);
-				//depth--;
 				puts(fullpath);
 			}
 
 			if ((check_type(fullpath)) == 0 && depth > 0)
 			{
-				//depth++;
 				list_directory(fullpath, aflag, lflag);
 				depth--;
 			}
@@ -807,10 +799,10 @@ int read_args(int argc, char *argv[])
 {
 	//Reads and parses the arguments inputted
 	int  opt;
-	bool aflag = false; //all entries be considered, including file-entries beginning with the '.' character
+	bool aflag = false; //All entries be considered, including file-entries beginning with the '.' character
 	bool cflag = false; //Print only the count of the number of matching file-entries, then exit
-	bool dflag = false;
-	bool lflag = false; //print long listing (permissions, inode, number of links, owner's name, group-owner's name, size, modificate-date, and name)
+	bool dflag = false; //Print directories to a spceified depth
+	bool lflag = false; //Print long listing (permissions, inode, number of links, owner's name, group-owner's name, size, modificate-date, and name)
 	bool rflag = false; //Reverse the order of any sorting options.
 	bool sflag = false; //Print matching file-entries, sorted by size. If both -s and -t are provided, -t takes precedence.
 	bool tflag = false; //Print matching file-entries, sorted by modification time. If both -s and -t are provided, -t takes precedence.
@@ -818,7 +810,6 @@ int read_args(int argc, char *argv[])
 	int  depth = 0; //Limit the search to the indicated depth, descending at most depth levels
 	int filecount = 0;
 	
-
 	while ((opt = getopt(argc, argv, OPTLIST)) != -1) 
 	{
 		//  ACCEPT A BOOLEAN ARGUMENT
