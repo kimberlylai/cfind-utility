@@ -217,6 +217,10 @@ void sort_size(char *pathname, bool tflag, bool sflag, bool aflag, bool lflag){
 		size_t pathlen = strlen(pathname);
 		n = scandir(targetdirectory, &namelist, 0, alphasort);
 		struct stat statbuf;
+		struct passwd *pwd;
+		struct group *grp;
+		struct tm   *tm;
+		char datestring[256];
 		if (n < 0)
 		{
 			fprintf(stderr, "Error: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", strerror(errno));
@@ -242,6 +246,36 @@ void sort_size(char *pathname, bool tflag, bool sflag, bool aflag, bool lflag){
 					stat(namelist[n]->d_name, &statbuf);
 					char *fullpath = malloc(pathlen + strlen(namelist[n]->d_name) + 2);
 					sprintf(fullpath, "%s/%s", path,namelist[n]->d_name);
+					if (lflag == 1){
+						if (stat(fullpath, &statbuf) != -1)
+						{
+							printf("%llu\t", statbuf.st_ino); //Print inode
+							printf((S_ISDIR(statbuf.st_mode)) ? "d" : "-");
+							printf((statbuf.st_mode & S_IRUSR) ? "r" : "-");
+							printf((statbuf.st_mode & S_IWUSR) ? "w" : "-");
+							printf((statbuf.st_mode & S_IXUSR) ? "x" : "-");
+							printf((statbuf.st_mode & S_IRGRP) ? "r" : "-");
+							printf((statbuf.st_mode & S_IWGRP) ? "w" : "-");
+							printf((statbuf.st_mode & S_IXGRP) ? "x" : "-");
+							printf((statbuf.st_mode & S_IROTH) ? "r" : "-");
+							printf((statbuf.st_mode & S_IWOTH) ? "w" : "-");
+							printf((statbuf.st_mode & S_IXOTH) ? "x" : "-"); //Print permissions
+							printf("\t");
+							printf("%hu\t", statbuf.st_nlink); //Print links
+							if ((pwd = getpwuid(statbuf.st_uid)) != NULL)
+							{
+								printf("%s\t", pwd->pw_name); //Print owner
+							}
+							if ((grp = getgrgid(statbuf.st_gid)) != NULL)
+							{
+								printf("%s\t", grp->gr_name);//Print group
+							}
+							printf("%jd\t", (intmax_t)statbuf.st_size); //Print size
+							tm = localtime(&statbuf.st_mtime);//Get localized date string
+							strftime(datestring, sizeof(datestring), nl_langinfo(D_T_FMT), tm);
+							printf(" %s\t", datestring);//Print date
+						}
+					}
 					puts(fullpath);
 					if ((check_type(fullpath)) == 0) 
 					{
