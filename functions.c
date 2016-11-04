@@ -27,7 +27,34 @@
 
 #define	OPTLIST		"acd:lrstu"
 
-void sort_struct(struct dirent **namelist, int left, int right) 
+bool check_type(char *pathname) 
+{
+	//checks if pathname specified is a file or a directories
+	//use dirent DTYPE
+	//if it is a file, return 1
+	//if it is a dir, return 0
+	struct stat statbuf;
+	if (stat(pathname, &statbuf) == 0)
+	{
+		if (statbuf.st_mode & S_IFDIR) //if it is a dir
+		{
+			return 0;
+		}
+		else if (statbuf.st_mode & S_IFREG) //if it's a file
+		{
+			return 1;
+		}
+		else
+		{
+			printf("Error: \"%s\" is neither a file nor a directory. Try again. \n", pathname);
+			exit(EXIT_FAILURE); //it's neither
+		}
+	}
+	printf("Error: \"%s\" is neither a file nor a directory. Try again. \n", pathname);
+	exit(EXIT_FAILURE);
+}
+
+void sort_struct_time(struct dirent **namelist, int left, int right) 
 {
 
 	int sortleft;
@@ -65,43 +92,167 @@ void sort_struct(struct dirent **namelist, int left, int right)
 		}
 	} 
 	while (sortleft <= sortright);
-	if (left < sortright) sort_struct(namelist, left, sortright);
-	if (sortleft < right) sort_struct(namelist, sortleft, right);
+	if (left < sortright) sort_struct_time(namelist, left, sortright);
+	if (sortleft < right) sort_struct_time(namelist, sortleft, right);
 }
-
-void quick_struct(struct dirent **namelist, int count)
+void sort_struct_size(struct dirent **namelist, int left, int right) 
 {
-	sort_struct(namelist, 0, count - 1);
+
+	int sortleft;
+	int sortright;
+
+	struct dirent *temp;
+	struct stat i_buffer;
+	struct stat j_buffer;
+	struct stat x_buffer;
+	sortleft = left; sortright = right;
+
+	stat(namelist[sortleft]->d_name, &i_buffer);
+	stat(namelist[sortright]->d_name, &j_buffer);
+	stat(namelist[(left + right) / 2]->d_name, &x_buffer);
+
+	do {
+		while ((i_buffer.st_size < x_buffer.st_size) && (sortleft < right))
+		{
+			sortleft++;
+			stat(namelist[sortleft]->d_name, &i_buffer);
+		}
+		while ((j_buffer.st_size > x_buffer.st_size) && (sortright > left))
+		{
+			sortright--;
+			stat(namelist[sortright]->d_name, &j_buffer);
+		}
+		if (sortleft <= sortright) 
+		{
+			temp = namelist[sortleft];
+			namelist[sortleft] = namelist[sortright];
+			namelist[sortright] = temp;
+			sortleft++; sortright--;
+			stat(namelist[sortleft]->d_name, &i_buffer);
+			stat(namelist[sortright]->d_name, &j_buffer);
+		}
+	} 
+	while (sortleft <= sortright);
+	if (left < sortright) sort_struct_size(namelist, left, sortright);
+	if (sortleft < right) sort_struct_size(namelist, sortleft, right);
 }
-
-
-bool check_type(char *pathname) 
+void quick_struct(struct dirent **namelist, int count, bool tflag, bool sflag)
 {
-	//checks if pathname specified is a file or a directories
-	//use dirent DTYPE
-	//if it is a file, return 1
-	//if it is a dir, return 0
-	struct stat statbuf;
-	if (stat(pathname, &statbuf) == 0)
+	if(tflag==1 && sflag ==0)
 	{
-		if (statbuf.st_mode & S_IFDIR) //if it is a dir
-		{
-			return 0;
-		}
-		else if (statbuf.st_mode & S_IFREG) //if it's a file
-		{
-			return 1;
-		}
-		else
-		{
-			printf("Error: \"%s\" is neither a file nor a directory. Try again. \n", pathname);
-			exit(EXIT_FAILURE); //it's neither
-		}
+		sort_struct_time(namelist, 0, count - 1);
 	}
-	printf("Error: \"%s\" is neither a file nor a directory. Try again. \n", pathname);
-	exit(EXIT_FAILURE);
+	else if (tflag ==0 && sflag == 1)
+	{
+		sort_struct_size(namelist, 0, count - 1);
+	}
+	else 
+	{
+		sort_struct_time(namelist, 0, count - 1);
+		sort_struct_size(namelist, 0, count - 1);
+	}
+}
+void sort_time(char *pathname, bool tflag, bool sflag, bool aflag, bool lflag){
+		struct dirent **namelist;
+		int n;
+		const char *targetdirectory = pathname;
+		char *path = pathname;
+		struct tm   *tm;
+		char datestring[256];
+		size_t pathlen = strlen(pathname);
+		n = scandir(targetdirectory, &namelist, 0, alphasort);
+		struct stat statbuf;
+		if (n < 0)
+		{
+			fprintf(stderr, "Error: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", strerror(errno));
+			exit(EXIT_FAILURE); 		//exit indicating failure
+		}
+		else 
+		{
+			{
+				quick_struct(namelist, n,tflag,sflag);
+				while (n--)
+				{
+					if ((strcmp(namelist[n]->d_name, ".") && strcmp(namelist[n]->d_name, "..")) == 0)
+					{
+						//ignore . & ..
+						continue;
+					}
+					if (aflag == 0){
+						if (namelist[n]->d_name[0] == '.')
+						{
+							continue;
+						}
+					}
+				
+					stat(namelist[n]->d_name, &statbuf);
+					char *fullpath = malloc(pathlen + strlen(namelist[n]->d_name) + 2);
+					tm = localtime(&statbuf.st_mtime);
+					strftime(datestring, sizeof(datestring), nl_langinfo(D_T_FMT), tm);
+					sprintf(fullpath, "%s/%s", path,namelist[n]->d_name);
+					puts(fullpath);
+					
+					if ((check_type(fullpath)) == 0) 
+					{
+						sort_time(fullpath, tflag, sflag, aflag, lflag);
+					}
+					free(namelist[n]);
+					free(fullpath);
+					
+					
+				}
+				free(namelist);
+			}
+		}
 }
 
+void sort_size(char *pathname, bool tflag, bool sflag, bool aflag, bool lflag){
+		struct dirent **namelist;
+		int n;
+		const char *targetdirectory = pathname;
+		char *path = pathname;
+		size_t pathlen = strlen(pathname);
+		n = scandir(targetdirectory, &namelist, 0, alphasort);
+		struct stat statbuf;
+		if (n < 0)
+		{
+			fprintf(stderr, "Error: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", strerror(errno));
+			exit(EXIT_FAILURE); 		//exit indicating failure
+		}
+		else 
+		{
+			{
+				quick_struct(namelist, n,tflag,sflag);
+				while (n--)
+				{
+					if ((strcmp(namelist[n]->d_name, ".") && strcmp(namelist[n]->d_name, "..")) == 0)
+					{
+						//ignore . & ..
+						continue;
+					}
+					if (aflag == 0){
+						if (namelist[n]->d_name[0] == '.')
+						{
+							continue;
+						}
+					}
+					stat(namelist[n]->d_name, &statbuf);
+					char *fullpath = malloc(pathlen + strlen(namelist[n]->d_name) + 2);
+					sprintf(fullpath, "%s/%s", path,namelist[n]->d_name);
+					puts(fullpath);
+					if ((check_type(fullpath)) == 0) 
+					{
+						sort_size(fullpath, tflag, sflag, aflag, lflag);
+					}
+					free(namelist[n]);
+					free(fullpath);
+					
+				}
+				free(namelist);
+			}
+		}
+	
+}
 void list_directory_stat_exp(char *dirname, bool aflag, bool lflag, STAT_EXPRESSION statexpr)
 {
 	//prints matching directories and files to a stat expression
@@ -129,7 +280,7 @@ void list_directory_stat_exp(char *dirname, bool aflag, bool lflag, STAT_EXPRESS
 		if (fullpath == NULL)
 		{
 			//if NULL. print error and exit
-			fprintf(stderr, "Error: %s: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", argv[optind], strerror(errno));
+			fprintf(stderr, "Error: %s: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", fullpath, strerror(errno));
 			exit(EXIT_FAILURE); 		//exit indicating failure
 		}
 		if ((strcmp(dp->d_name, ".") && strcmp(dp->d_name, "..")) == 0)
@@ -153,7 +304,7 @@ void list_directory_stat_exp(char *dirname, bool aflag, bool lflag, STAT_EXPRESS
 					{
 						if (stat(fullpath, &statbuf) == 0)
 						{
-							printf("%llu\s", statbuf.st_ino); //Print inode
+							printf("%llu\t", statbuf.st_ino); //Print inode
 							printf((S_ISDIR(statbuf.st_mode)) ? "d" : "-");
 							printf((statbuf.st_mode & S_IRUSR) ? "r" : "-");
 							printf((statbuf.st_mode & S_IWUSR) ? "w" : "-");
@@ -164,16 +315,16 @@ void list_directory_stat_exp(char *dirname, bool aflag, bool lflag, STAT_EXPRESS
 							printf((statbuf.st_mode & S_IROTH) ? "r" : "-");
 							printf((statbuf.st_mode & S_IWOTH) ? "w" : "-");
 							printf((statbuf.st_mode & S_IXOTH) ? "x" : "-"); //Print permissions
-							printf("\s");
-							printf("%hu\s", statbuf.st_nlink); //Print links
+							printf("\t");
+							printf("%hu\t", statbuf.st_nlink); //Print links
 							if ((pwd = getpwuid(statbuf.st_uid)) != NULL)
-								printf("%s\s", pwd->pw_name); //Print owner
+								printf("%s\t", pwd->pw_name); //Print owner
 							if ((grp = getgrgid(statbuf.st_gid)) != NULL)
-								printf("%s\s", grp->gr_name);//Print group
-							printf("%jd\s", (intmax_t)statbuf.st_size); //Print size
+								printf("%s\t", grp->gr_name);//Print group
+							printf("%jd\t", (intmax_t)statbuf.st_size); //Print size
 							tm = localtime(&statbuf.st_mtime);//Get localized date string
 							strftime(datestring, sizeof(datestring), nl_langinfo(D_T_FMT), tm);
-							printf(" %s\s", datestring);//Print date
+							printf(" %s\t", datestring);//Print date
 						}
 					}
 					puts(fullpath);
@@ -191,7 +342,7 @@ void list_directory_stat_exp(char *dirname, bool aflag, bool lflag, STAT_EXPRESS
 						{
 							if (stat(fullpath, &statbuf) != -1)
 							{
-								printf("%llu\s", statbuf.st_ino); //Print inode
+								printf("%llu\t", statbuf.st_ino); //Print inode
 								printf((S_ISDIR(statbuf.st_mode)) ? "d" : "-");
 								printf((statbuf.st_mode & S_IRUSR) ? "r" : "-");
 								printf((statbuf.st_mode & S_IWUSR) ? "w" : "-");
@@ -202,16 +353,16 @@ void list_directory_stat_exp(char *dirname, bool aflag, bool lflag, STAT_EXPRESS
 								printf((statbuf.st_mode & S_IROTH) ? "r" : "-");
 								printf((statbuf.st_mode & S_IWOTH) ? "w" : "-");
 								printf((statbuf.st_mode & S_IXOTH) ? "x" : "-"); //Print permissions
-								printf("\s");
-								printf("%hu\s", statbuf.st_nlink); //Print links
+								printf("\t");
+								printf("%hu\t", statbuf.st_nlink); //Print links
 								if ((pwd = getpwuid(statbuf.st_uid)) != NULL)
-									printf("%s\s", pwd->pw_name); //Print owner
+									printf("%s\t", pwd->pw_name); //Print owner
 								if ((grp = getgrgid(statbuf.st_gid)) != NULL)
-									printf("%s\s", grp->gr_name);//Print group
-								printf("%jd\s", (intmax_t)statbuf.st_size); //Print size
+									printf("%s\t", grp->gr_name);//Print group
+								printf("%jd\t", (intmax_t)statbuf.st_size); //Print size
 								tm = localtime(&statbuf.st_mtime);//Get localized date string
 								strftime(datestring, sizeof(datestring), nl_langinfo(D_T_FMT), tm);
-								printf(" %s\s", datestring);//Print date
+								printf(" %s\t", datestring);//Print date
 							}
 						}
 						puts(fullpath);
@@ -254,7 +405,7 @@ void list_directory(char *dirname, bool aflag, bool lflag)
 		if (fullpath == NULL)
 		{
 			//if NULL. print error and exit//if NULL. print error and exit
-			fprintf(stderr, "Error: %s: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", argv[optind], strerror(errno));
+			fprintf(stderr, "Error: %s: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", fullpath, strerror(errno));
 			exit(EXIT_FAILURE); 		//exit indicating failure
 			
 		}
@@ -316,7 +467,7 @@ void list_directory(char *dirname, bool aflag, bool lflag)
 					{
 						if (stat(fullpath, &statbuf) != -1)
 						{
-							printf("%llu\s", statbuf.st_ino); //Print inode
+							printf("%llu\t", statbuf.st_ino); //Print inode
 							printf((S_ISDIR(statbuf.st_mode)) ? "d" : "-");
 							printf((statbuf.st_mode & S_IRUSR) ? "r" : "-");
 							printf((statbuf.st_mode & S_IWUSR) ? "w" : "-");
@@ -327,16 +478,16 @@ void list_directory(char *dirname, bool aflag, bool lflag)
 							printf((statbuf.st_mode & S_IROTH) ? "r" : "-");
 							printf((statbuf.st_mode & S_IWOTH) ? "w" : "-");
 							printf((statbuf.st_mode & S_IXOTH) ? "x" : "-"); //Print permissions
-							printf("\s");
-							printf("%hu\s", statbuf.st_nlink); //Print links
+							printf("\t");
+							printf("%hu\t", statbuf.st_nlink); //Print links
 							if ((pwd = getpwuid(statbuf.st_uid)) != NULL)
-								printf("%s\s", pwd->pw_name); //Print owner
+								printf("%s\t", pwd->pw_name); //Print owner
 							if ((grp = getgrgid(statbuf.st_gid)) != NULL)
-								printf("%s\s", grp->gr_name);//Print group
-							printf("%jd\s", (intmax_t)statbuf.st_size); //Print size
+								printf("%s\t", grp->gr_name);//Print group
+							printf("%jd\t", (intmax_t)statbuf.st_size); //Print size
 							tm = localtime(&statbuf.st_mtime);//Get localized date string
 							strftime(datestring, sizeof(datestring), nl_langinfo(D_T_FMT), tm);
-							printf(" %s\s", datestring);//Print date
+							printf(" %s\t", datestring);//Print date
 						}
 					}
 					puts(fullpath);
@@ -374,7 +525,7 @@ void list_directory_depth(char *dirname, bool aflag, bool lflag, int depth)
 		char *fullpath = malloc(pathlen + strlen(dp->d_name) + 2);
 		if (fullpath == NULL) {
 			//if NULL. print error and exit//if NULL. print error and exit
-			fprintf(stderr, "Error: %s: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", argv[optind], strerror(errno));
+			fprintf(stderr, "Error: %s: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", fullpath, strerror(errno));
 			exit(EXIT_FAILURE); 		//exit indicating failure
 			
 		}
@@ -429,7 +580,7 @@ int count_all(char *dirname, bool aflag, int filecount)
 		char *fullpath = malloc(pathlen + strlen(dp->d_name) + 2);
 		if (fullpath == NULL) {
 			//if NULL. print error and exit//if NULL. print error and exit
-			fprintf(stderr, "Error: %s: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", argv[optind], strerror(errno));
+			fprintf(stderr, "Error: %s: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", fullpath, strerror(errno));
 			exit(EXIT_FAILURE); 		//exit indicating failure
 			
 		}
@@ -488,7 +639,7 @@ void unlink_dir(char *pathname, bool aflag)
 		if (fullpath == NULL)
 		{
 			//if NULL. print error and exit//if NULL. print error and exit
-			fprintf(stderr, "Error: %s: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", argv[optind], strerror(errno));
+			fprintf(stderr, "Error: %s: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", fullpath, strerror(errno));
 			exit(EXIT_FAILURE); 		//exit indicating failure
 			
 		}
@@ -566,7 +717,7 @@ void unlink_dir_depth(char *pathname, bool aflag, bool dflag, int depth)
 		if (fullpath == NULL) 
 		{
 			//if NULL. print error and exit//if NULL. print error and exit
-			fprintf(stderr, "Error: %s: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", argv[optind], strerror(errno));
+			fprintf(stderr, "Error: %s: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", fullpath, strerror(errno));
 			exit(EXIT_FAILURE); 		//exit indicating failure
 			
 		}
@@ -664,9 +815,9 @@ int read_args(int argc, char *argv[])
 	bool sflag = false; //Print matching file-entries, sorted by size. If both -s and -t are provided, -t takes precedence.
 	bool tflag = false; //Print matching file-entries, sorted by modification time. If both -s and -t are provided, -t takes precedence.
 	bool uflag = false; //Attempt to unlink (remove) as many matching file-entries as possible. The cfind utility should exit with failure if any attempt to unlink a file-entry was unsuccessful.
-	//char *filenm = NULL;
 	int  depth = 0; //Limit the search to the indicated depth, descending at most depth levels
 	int filecount = 0;
+	
 
 	while ((opt = getopt(argc, argv, OPTLIST)) != -1) 
 	{
@@ -712,59 +863,42 @@ int read_args(int argc, char *argv[])
 			exit(EXIT_FAILURE); 		//exit indicating failure
 		}
 	}
+	
 
 	if (argc <= 0) 
 	{
-		//  display program's usage/help
+		//Display error and usage
 		fprintf(stderr, "Error: %s \nusage: ./cfind [options]  pathname  [stat-expression]\n", strerror(errno));
+		exit(EXIT_FAILURE);
 	}
 
 	if (access(argv[optind], F_OK) != 0)
 	{
+		//check if file or directory exists, if not display error and usage
 		fprintf(stderr, "Error: %s: %s \nusage: ./cfind  [options]  pathname  [stat-expression]\n", argv[optind], strerror(errno));
 		exit(EXIT_FAILURE); 		//exit indicating failure
 	}
 
 	if (cflag == 1) {
+		//if pointing to a file, count as 1
+		if((check_type(argv[optind]))==1){
+			printf("1\n");
+			exit(EXIT_SUCCESS);
+		}else{
 		printf("%d\n", count_all(argv[optind], aflag, filecount));
 		exit(EXIT_SUCCESS);
-	}
-
-	if (tflag == 1)
-	{
-		struct dirent **namelist;
-		int n;
-		const char *targetdirectory = ".";
-		struct tm   *tm;
-		char datestring[256];
-		n = scandir(targetdirectory, &namelist, 0, alphasort);
-		struct stat statbuf;
-		if (n < 0)
-			perror("scandir");
-		else 
-		{
-			{
-				quick_struct(namelist, n);
-
-				while (n--)
-				{
-					if ((strcmp(namelist[n]->d_name, ".") && strcmp(namelist[n]->d_name, "..")) == 0)
-					{
-						//ignore . & ..
-						continue;
-					}
-					stat(namelist[n]->d_name, &statbuf);
-					tm = localtime(&statbuf.st_mtime);
-					strftime(datestring, sizeof(datestring), nl_langinfo(D_T_FMT), tm);
-					printf("%s\n", namelist[n]->d_name);
-					free(namelist[n]);
-				}
-				free(namelist);
-			}
 		}
+	}
+	if (sflag == 1)
+	{
+		sort_size(argv[optind], tflag, sflag, aflag, lflag);
 		exit(EXIT_SUCCESS);
 	}
-
+	if (tflag == 1)
+	{
+		sort_time(argv[optind], tflag, sflag, aflag, lflag);
+		exit(EXIT_SUCCESS);
+	}
 	if (uflag == 1 && dflag == 0)
 	{
 		if ((check_type(argv[optind])) == 1) //if it is a file, unlink the file
@@ -807,14 +941,14 @@ int read_args(int argc, char *argv[])
 		list_directory_stat_exp(argv[optind], aflag, lflag, statexpr);
 		exit(EXIT_SUCCESS);
 	}
-	if ((check_type(argv[optind])) == 1) //if it is a file, unlink the file
+	
+	if ((check_type(argv[optind])) == 1) 
 	{
 		printf("%s\n", argv[optind]);
 		exit(EXIT_SUCCESS);
 	}
-	else if ((check_type(argv[optind])) == 0) //else if it's a directory, run our function
+	else if ((check_type(argv[optind])) == 0) 
 	{
-		//printf("%s\n",argv[optind]);
 		list_directory(argv[optind], aflag, lflag);
 		exit(EXIT_SUCCESS);
 	}

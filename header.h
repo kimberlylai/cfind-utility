@@ -20,4 +20,10 @@ int read_args (int argc, char *argv[]);
 
 void quick_struct(struct dirent **namelist, int count);
 
-int sort_struct(struct dirent **namelist, int left, int right);
+void sort_struct_time(struct dirent **namelist, int left, int right);
+
+void sort_struct_size(struct dirent **namelist, int left, int right);
+
+void sort_time(char *pathname, bool tflag, bool sflag, bool aflag);
+
+void sort_size(char *pathname, bool tflag, bool sflag, bool aflag);
